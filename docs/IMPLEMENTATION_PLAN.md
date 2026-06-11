@@ -341,7 +341,7 @@ async function callImageModel(req: ImageGenRequest): Promise<ImageGenResult> {
 | 8 | **Done** (2026-06-11) | verify commit | `guardrails/verify.ts` (pure `diffAGT` + `buildViolationFeedback`); 6 new contracts, suite now 19/19 |
 | 9 | **Done** (2026-06-11) | verified-generation commit | `guardrails/verified-generation.ts` wired into V7+V8 behind `verifyAGT` request flag (default OFF); harness can enable via `request_fields` in gate config; debug payload carries `agtVerification` |
 | 10 | Not started | | |
-| 11 | Not started | | |
+| 11 | **Done** (2026-06-11) | provider abstraction commit | `models/{image-model.client,provider-registry,providers/gemini}.ts`; `callGemini` kept as shim; AGT extraction rides the shared client; contracts 20/20 |
 | 12 | Not started | | |
 | 13 | Not started | | |
 | 14 | Not started | | |

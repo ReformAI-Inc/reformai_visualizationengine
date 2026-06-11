@@ -8,6 +8,7 @@ import {
 } from '../pipelines/core/pipeline-routing.js';
 import { classifyAGTConfidence } from '../guardrails/classify.js';
 import { buildViolationFeedback, diffAGT } from '../guardrails/verify.js';
+import { resolveProvider } from '../models/provider-registry.js';
 import type { ArchitecturalGroundTruth, GenerateVisualizationParams } from '../shared/types/index.js';
 import { composeCanonicalGenerationParts } from '../pipelines/core/pipeline-composer.js';
 import { buildConstraintHierarchyBlock } from '../prompts/balanced_v7/visualization.constants.js';
@@ -194,6 +195,16 @@ const outputAGT = (overrides: Partial<ArchitecturalGroundTruth>): ArchitecturalG
     console.log('PASS verify: violation feedback block well-formed');
 }
 
+// ── Provider registry contracts ───────────────────────────────────────────────
+
+{
+    const providers = [{ id: 'gemini', supports: (m: string) => m.startsWith('gemini-') }];
+    assert.equal(resolveProvider('gemini-2.5-flash-image', providers), 'gemini', 'current model routes to gemini');
+    assert.equal(resolveProvider('gemini-3.1-flash-image', providers), 'gemini', 'NB2 model routes to gemini');
+    assert.throws(() => resolveProvider('flux-2-pro', providers), /No provider registered/, 'unknown model id throws');
+    console.log('PASS provider registry routes gemini-* and rejects unknown model ids');
+}
+
 // ── Input normalization contracts ─────────────────────────────────────────────
 
 {
@@ -322,7 +333,7 @@ const outputAGT = (overrides: Partial<ArchitecturalGroundTruth>): ArchitecturalG
     console.log('PASS V7 hierarchy inserts AGT line only with hard facts');
 }
 
-console.log(`\nContract checks passed: 19/19`);
+console.log(`\nContract checks passed: 20/20`);
 
 
 

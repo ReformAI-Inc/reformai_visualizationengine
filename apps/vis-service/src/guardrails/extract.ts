@@ -11,20 +11,9 @@
 // malformed responses.
 // ============================================================
 
-import { loadEnvFile } from 'node:process';
-import { GoogleGenAI } from '@google/genai';
 import type { MultipartFile } from '@fastify/multipart';
 import type { ArchitecturalGroundTruth, ConfidenceLevel, CountFieldInstance } from '../shared/types/agt.js';
-
-if (!process.env.K_SERVICE) {
-    try { loadEnvFile(); } catch { /* rely on env already set */ }
-}
-
-const API_KEY = process.env.API_KEY;
-if (!API_KEY) throw new Error('API_KEY environment variable is not set.');
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
-const AGT_EXTRACTION_MODEL = process.env.AGT_EXTRACTION_MODEL || 'gemini-2.5-flash';
+import { AGT_EXTRACTION_MODEL, callTextModel } from '../models/image-model.client.js';
 
 export const FALLBACK_AGT: ArchitecturalGroundTruth = {
     window_count:    { value: 0, confidence: 'low', instances: [] },
@@ -132,18 +121,13 @@ export const extractAGTFromImageData = async (
     base64Data: string,
     mimeType: string,
 ): Promise<ArchitecturalGroundTruth> => {
-    const response = await ai.models.generateContent({
-        model: AGT_EXTRACTION_MODEL,
-        contents: {
-            parts: [
-                { text: EXTRACTION_PROMPT },
-                { inlineData: { data: base64Data, mimeType } },
-            ],
-        },
-    });
-
-    const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('AGT extraction: no text response from Gemini');
+    const text = await callTextModel(
+        [
+            { text: EXTRACTION_PROMPT },
+            { inlineData: { data: base64Data, mimeType } },
+        ],
+        AGT_EXTRACTION_MODEL,
+    );
 
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
 
