@@ -10,6 +10,7 @@ import * as balancedV4_1Service from '../legacy-services/balanced_v4_1/geminiSer
 import * as balancedV5Service from '../versions/balanced-v5/index.js';
 import * as balancedV6Service from '../versions/balanced-v6/index.js';
 import * as balancedV7Service from '../versions/balanced-v7/index.js';
+import * as balancedV8Service from '../versions/balanced-v8/index.js';
 import { resolveDispatchModes, resolveHandlerMode, resolvePipelineMode } from './pipeline-routing.js';
 const PIPELINE_HANDLERS = {
     baseline_original: baselineService.generateVisualization,
@@ -23,6 +24,7 @@ const PIPELINE_HANDLERS = {
     balanced_v5: balancedV5Service.generateVisualization,
     balanced_v6: balancedV6Service.generateVisualization,
     balanced_v7: balancedV7Service.generateVisualization,
+    balanced_v8: balancedV8Service.generateVisualization,
     improved_current: improvedService.generateVisualization,
 };
 const PIPELINE_LOGS = {
@@ -37,6 +39,7 @@ const PIPELINE_LOGS = {
     balanced_v5: '[Dispatcher] Routing to BALANCED V5 pipeline (Lean V5 - moodboard integration)',
     balanced_v6: '[Dispatcher] Routing to BALANCED V6 pipeline (V5 + catalogue anchor integration)',
     balanced_v7: '[Dispatcher] Routing to BALANCED V7 pipeline (AGT confidence-gated enforcement)',
+    balanced_v8: '[Dispatcher] Routing to BALANCED V8 pipeline (catalogue-first, installer framing)',
     improved_current: '[Dispatcher] Routing to IMPROVED pipeline',
 };
 export const getPipelineHandlerForMode = (mode) => PIPELINE_HANDLERS[resolveHandlerMode(mode)];

@@ -41,7 +41,7 @@ export const generateVisualizationSchema = z.object({
     pipelineMode: z.enum([
         'baseline_original', 'balanced_v1', 'balanced_v2', 'balanced_v2_1', 'balanced_v2_2',
         'balanced_v3_0', 'balanced_v4_0', 'balanced_v4_1', 'balanced_v5', 'balanced_v6',
-        'balanced_v7', 'improved_current',
+        'balanced_v7', 'balanced_v8', 'improved_current',
     ]).optional().default('balanced_v7'),
     stylePreset: stylePresetSchema,
     renovationSelectionIds: renovationSelectionIdsSchema,

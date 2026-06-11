@@ -4,6 +4,7 @@ Fastify backend for the Visualization Engine.
 
 ## Canonical and Comparison Modes
 - Canonical active candidate: `balanced_v7`
+- Catalogue-first comparison candidate: `balanced_v8` (regression pending)
 - Explicit comparison mode: `balanced_v6` (separate pipeline module)
 - Historical/frozen benchmark modes remain callable for comparison workflows.
 

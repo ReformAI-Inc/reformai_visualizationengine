@@ -492,6 +492,7 @@ export default function App() {
     'balanced_v5':      'Balanced V5.1 (Lean — Moodboard)',
     'balanced_v6':      'Balanced V6.0 (Service Provider Catalogue)',
     'balanced_v7':      'Balanced V7 (AGT Confidence-Gated)',
+    'balanced_v8':      'Balanced V8 (Catalogue-First)',
   };
 
   const handleMoodChange = (files) => {
@@ -564,7 +565,7 @@ export default function App() {
     if (!roomImg.file) return;
 
     // V6.0: build active renovation selection IDs — only active when V6 pipeline is selected
-    const isV6Mode = comparisonTarget === 'balanced_v6' || comparisonTarget === 'balanced_v7';
+    const isV6Mode = comparisonTarget === 'balanced_v6' || comparisonTarget === 'balanced_v7' || comparisonTarget === 'balanced_v8';
     const activeRenovationSelections = isV6Mode
       ? Object.fromEntries(
           CATEGORY_ORDER.filter(cat => renovationSelections[cat])
@@ -686,6 +687,7 @@ export default function App() {
                <option value="balanced_v5">Balanced V5.1 (Lean — Moodboard)</option>
                <option value="balanced_v6">Balanced V6.0 (Service Provider Catalogue)</option>
                <option value="balanced_v7">Balanced V7 (AGT Confidence-Gated)</option>
+               <option value="balanced_v8">Balanced V8 (Catalogue-First)</option>
                <option value="improved_current">Improved Current</option>
              </select>
           </div>
@@ -781,7 +783,7 @@ export default function App() {
               rows={3} style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }} {...focus} />
           </Section>
 
-          {(comparisonTarget === 'balanced_v6' || comparisonTarget === 'balanced_v7') && <Section title="Service Provider Catalogue (V6.0 / V7)">
+          {(comparisonTarget === 'balanced_v6' || comparisonTarget === 'balanced_v7' || comparisonTarget === 'balanced_v8') && <Section title="Service Provider Catalogue">
             <CataloguePanel
               contractorId={contractorId}
               setContractorId={setContractorId}

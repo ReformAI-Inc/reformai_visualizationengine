@@ -25,6 +25,7 @@ npm run dev
 
 ## Product/Governance Model
 - Canonical active candidate: `balanced_v7`
+- Catalogue-first comparison candidate: `balanced_v8` (regression pending)
 - Explicit comparison mode: `balanced_v6` (separate pipeline module)
 - Historical/frozen benchmark modes remain available for comparison workflows.
 - Historical anchor: `baseline_original`

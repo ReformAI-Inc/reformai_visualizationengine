@@ -1,10 +1,11 @@
 # ReformAI Visualization Engine -- Current State
-**Last Updated:** 2026-05-21
+**Last Updated:** 2026-06-11
 
 Authoritative lifecycle source: `docs/PLATFORM_STATUS.md`
 
 ## Runtime Summary
 - Canonical active pipeline: `balanced_v7`
+- Catalogue-first comparison candidate: `balanced_v8` (regression pending; not canonical)
 - Explicit comparison pipeline: `balanced_v6` (separate handler module, no silent alias routing)
 - Historical benchmark modes remain callable for comparison/regression workflows
 
@@ -22,6 +23,7 @@ The backend structure cleanup is complete and now organized by responsibility un
 | V5 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v5/index.ts` |
 | V6 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v6/index.ts` |
 | V7 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v7/index.ts` |
+| V8 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v8/index.ts` |
 | Prompt blocks | `apps/vis-service/src/prompts/blocks/` |
 | AGT extraction/classification | `apps/vis-service/src/guardrails/` |
 | Model execution | `apps/vis-service/src/models/gemini.client.ts` |

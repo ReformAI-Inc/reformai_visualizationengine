@@ -1,5 +1,5 @@
 # ReformAI Visualization Engine -- Platform Status (Authoritative)
-**Last Verified:** 2026-05-21
+**Last Verified:** 2026-06-11
 
 ## 1. Canonical Runtime
 - Default pipeline mode: `balanced_v7`
@@ -16,6 +16,7 @@ All paths are relative to `apps/vis-service/src/`.
 | `balanced_v5` | Frozen benchmark reference | `pipelines/versions/balanced-v5/index.ts` |
 | `balanced_v6` | Explicit comparison pipeline | `pipelines/versions/balanced-v6/index.ts` |
 | `balanced_v7` | Canonical active candidate | `pipelines/versions/balanced-v7/index.ts` |
+| `balanced_v8` | Catalogue-first comparison candidate | `pipelines/versions/balanced-v8/index.ts` |
 | `improved_current` | Historical comparison path | `pipelines/legacy-services/improved/geminiService.ts` |
 
 ## 3. Routing Semantics

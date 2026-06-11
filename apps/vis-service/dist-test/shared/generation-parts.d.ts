@@ -11,7 +11,7 @@ export type GeminiPart = {
 export declare const bufferToGenerativePart: (file: MultipartFile & {
     buffer: Buffer;
 }) => GeminiPart;
-export declare const normalizeInjectedItems: (params: GenerateVisualizationParams, pipelineMode: "balanced_v5" | "balanced_v7") => {
+export declare const normalizeInjectedItems: (params: GenerateVisualizationParams, pipelineMode: "balanced_v5" | "balanced_v7" | "balanced_v8") => {
     injectedItems: InjectedItem[];
     item: InjectedItem | null;
     hasInjectedItem: boolean;
