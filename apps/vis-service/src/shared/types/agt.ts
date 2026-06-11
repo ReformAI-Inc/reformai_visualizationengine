@@ -65,4 +65,22 @@ export interface ClassifiedAGT {
     confidence_distribution: Record<ConfidenceLevel, number>;
 }
 
+// Verification types — post-generation AGT diff (input facts vs facts
+// re-extracted from the generated image). Only hard-tier facts can violate.
+
+export interface AGTViolation {
+    field: 'window_count' | 'door_count' | 'has_ceiling_fixture' | 'has_built_in_niches';
+    expected: string;
+    observed: string;
+    detail: string;
+}
+
+export interface AGTVerificationResult {
+    verified: boolean;            // true = no violations among conclusive hard facts
+    conclusive: boolean;          // false = output extraction too uncertain to verify some/all hard facts
+    violations: AGTViolation[];
+    inconclusive_fields: string[]; // hard facts that could not be checked (low-confidence output extraction)
+    attempts: number;             // generation attempts consumed (1 = no retry)
+}
+
 

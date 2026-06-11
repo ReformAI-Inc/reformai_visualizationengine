@@ -338,7 +338,7 @@ async function callImageModel(req: ImageGenRequest): Promise<ImageGenResult> {
 | 5 | **Done** (2026-06-11) | gate commit | `config.gate.yaml` (12 canonical cases, thresholds, judge/gate versioning) — case set pending human sign-off before first paid run |
 | 6 | **Done** (2026-06-11) | gate commit | `gate.py` + `runs/ledger.jsonl`; validated dry-run against recorded May manifests (FAIL on real hard rejection, PASS on clean run, baseline pickup works) |
 | 7 | **Done** (2026-06-11) | runs 003712 + 103411 | V7 baseline: PASS 12/12, 0 hard rejections, median 4.43 (accepted baseline in ledger). V8: PASS on hard rejections (0) but candidate median 3.98 vs baseline-pipeline 4.53 in the same run — V8 systematically under-transforms style in style-only (non-catalogue) flows. Note: Anthropic credits ran out mid-judging; 3 V7 cases + all 12 V8 cases were judged in-session by Claude Opus 4.8 with the identical rubric (marked `judge: session-claude-opus-4.8` in manifests). Re-judge via API for confirmation once credits are topped up if desired. |
-| 8 | Not started | | |
+| 8 | **Done** (2026-06-11) | verify commit | `guardrails/verify.ts` (pure `diffAGT` + `buildViolationFeedback`); 6 new contracts, suite now 19/19 |
 | 9 | Not started | | |
 | 10 | Not started | | |
 | 11 | Not started | | |

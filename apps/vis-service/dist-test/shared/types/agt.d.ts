@@ -50,4 +50,17 @@ export interface ClassifiedAGT {
     suppressed_fields: string[];
     confidence_distribution: Record<ConfidenceLevel, number>;
 }
+export interface AGTViolation {
+    field: 'window_count' | 'door_count' | 'has_ceiling_fixture' | 'has_built_in_niches';
+    expected: string;
+    observed: string;
+    detail: string;
+}
+export interface AGTVerificationResult {
+    verified: boolean;
+    conclusive: boolean;
+    violations: AGTViolation[];
+    inconclusive_fields: string[];
+    attempts: number;
+}
 //# sourceMappingURL=agt.d.ts.map
