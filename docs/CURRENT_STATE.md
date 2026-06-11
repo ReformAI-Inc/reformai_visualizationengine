@@ -41,6 +41,9 @@ The backend structure cleanup is complete and now organized by responsibility un
 - Backend build: `npm --workspace apps/vis-service run build`
 - Backend contracts: `npm --workspace apps/vis-service run test:contracts`
 - Frontend build: `npm --workspace apps/web-sandbox run build`
+- Regression gate (paid: live Gemini + Claude judge): `python tests/regression/gate.py`
+  - Verdict on an existing run, no API spend: `python tests/regression/gate.py --run-dir runs/<run> --dry-run`
+  - Canonical case set + thresholds: `tests/regression/config.gate.yaml`; trend record: `runs/ledger.jsonl`
 
 ## Deployment Topology
 `Browser -> Netlify CDN -> netlify/functions/api.mjs -> Cloud Run (Fastify) -> Gemini`

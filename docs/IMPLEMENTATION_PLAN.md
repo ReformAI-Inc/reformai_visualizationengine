@@ -334,10 +334,10 @@ async function callImageModel(req: ImageGenRequest): Promise<ImageGenResult> {
 | 1 | **Done** (2026-06-11) | hygiene sweep commit | `balanced_v8` added to Zod enum; schema parse verified |
 | 2 | **Done** (2026-06-11) | hygiene sweep commit | Sandbox V8 wiring committed |
 | 3 | **Done** (2026-06-11) | hygiene sweep commit | PLATFORM_STATUS, CURRENT_STATE, AGENT_HANDOFF, both READMEs synced |
-| 4 | Not started | | |
-| 5 | Not started | | |
-| 6 | Not started | | |
-| 7 | Not started | | |
+| 4 | **Done** (2026-06-11) | v6 alias commit | Wrapper deleted; explicit `HANDLER_ALIASES` in routing; debug records alias; contracts updated |
+| 5 | **Done** (2026-06-11) | gate commit | `config.gate.yaml` (12 canonical cases, thresholds, judge/gate versioning) — case set pending human sign-off before first paid run |
+| 6 | **Done** (2026-06-11) | gate commit | `gate.py` + `runs/ledger.jsonl`; validated dry-run against recorded May manifests (FAIL on real hard rejection, PASS on clean run, baseline pickup works) |
+| 7 | Blocked on sign-off | | Awaiting case-set/threshold approval; first paid V7 + V8 gate runs |
 | 8 | Not started | | |
 | 9 | Not started | | |
 | 10 | Not started | | |

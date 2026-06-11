@@ -46,7 +46,7 @@ from runtime_config import (
 
 FIXTURES    = ROOT / "fixtures"
 OUTPUTS     = ROOT / "runs"
-CONFIG_FILE = TESTS_DIR / "config.yaml"
+CONFIG_FILE = Path(os.environ["REGRESSION_CONFIG"]) if os.environ.get("REGRESSION_CONFIG") else TESTS_DIR / "config.yaml"
 SERVICE_DIR = resolve_service_dir()
 
 # Load environment variables from project root
