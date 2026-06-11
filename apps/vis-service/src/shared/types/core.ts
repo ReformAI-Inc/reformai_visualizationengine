@@ -47,6 +47,7 @@ export interface GenerateVisualizationParams {
     previousResultImage?: (MultipartFile & { buffer: Buffer }) | null;
     contractorId?: string;
     renovationSelectionIds?: import('./catalogue.js').RenovationSelectionIds;
+    verifyAGT?: boolean; // post-generation AGT verification + bounded retry (default off)
 }
 
 

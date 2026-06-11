@@ -36,6 +36,7 @@ export const generateVisualizationSchema = z.object({
     styleInfluence: z.number().min(0, 'La influencia del estilo debe ser minimo 0'),
     isRefinement: z.boolean().optional().default(false),
     geometryPreservation: z.boolean().optional().default(false),
+    verifyAGT: z.boolean().optional().default(false),
     phaseAnchoring: z.boolean().optional().default(false),
     phaseAnchoringV2: z.boolean().optional().default(false),
     pipelineMode: z.enum([

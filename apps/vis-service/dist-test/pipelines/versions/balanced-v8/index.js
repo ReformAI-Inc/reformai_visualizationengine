@@ -5,7 +5,7 @@ import { classifyAGTConfidence } from '../../../guardrails/classify.js';
 import { resolveRenovationSelections, hasActiveSelections, } from '../../../catalog/resolver.js';
 import { buildRequestStructure, normalizeInjectedItems, } from '../../../shared/generation-parts.js';
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
-import { callGemini } from '../../../models/gemini.client.js';
+import { generateWithVerification } from '../../../guardrails/verified-generation.js';
 export const generateVisualization = async (params) => {
     const { roomImage, roomType, stylePreset, moodBoardImages, textPrompt, styleInfluence, contractorId, renovationSelectionIds, } = params;
     const { injectedItems, item, hasInjectedItem, shimmedFromFurnitureImage, } = normalizeInjectedItems(params, 'balanced_v8');
@@ -56,12 +56,13 @@ export const generateVisualization = async (params) => {
         },
         itemImage: item?.image ?? null,
     });
-    const { image } = await callGemini(parts);
+    const { image, verification } = await generateWithVerification(parts, rawAGT, classifiedAGT, { enabled: params.verifyAGT === true });
     return {
         image,
         debug: {
             pipelineMode: 'balanced_v8',
             templateVersion: '8.0.0',
+            agtVerification: verification,
             agtStatus,
             agtFallbackReason,
             agtExtractionOverall: rawAGT.extraction_confidence_overall,

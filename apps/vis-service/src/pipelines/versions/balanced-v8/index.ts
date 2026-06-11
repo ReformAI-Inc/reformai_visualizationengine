@@ -27,7 +27,7 @@ import {
     normalizeInjectedItems,
 } from '../../../shared/generation-parts.js';
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
-import { callGemini } from '../../../models/gemini.client.js';
+import { generateWithVerification } from '../../../guardrails/verified-generation.js';
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
@@ -128,13 +128,19 @@ export const generateVisualization = async (
         itemImage: item?.image ?? null,
     });
 
-    const { image } = await callGemini(parts);
+    const { image, verification } = await generateWithVerification(
+        parts,
+        rawAGT,
+        classifiedAGT,
+        { enabled: params.verifyAGT === true },
+    );
 
     return {
         image,
         debug: {
             pipelineMode: 'balanced_v8',
             templateVersion: '8.0.0',
+            agtVerification: verification,
             agtStatus,
             agtFallbackReason,
             agtExtractionOverall: rawAGT.extraction_confidence_overall,

@@ -89,7 +89,7 @@ def start_backend(base):
 
 # ── generation api ────────────────────────────────────────────────────────────
 
-def call_pipeline(base, fixture_path, room_type, style, pipeline_mode, style_influence):
+def call_pipeline(base, fixture_path, room_type, style, pipeline_mode, style_influence, extra_fields=None):
     ext  = fixture_path.suffix.lower()
     mime = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
     with open(fixture_path, "rb") as img:
@@ -101,6 +101,8 @@ def call_pipeline(base, fixture_path, room_type, style, pipeline_mode, style_inf
             "isRefinement":   "false",
             "textPrompt":     "",
         }
+        if extra_fields:
+            data.update({k: str(v) for k, v in extra_fields.items()})
         resp = requests.post(
             f"{base}/generate-visualization?mode={pipeline_mode}",
             files=files,
@@ -162,7 +164,7 @@ def run_tests(cfg):
 
                 print(f"  → {pipe['label']}...", end="", flush=True)
                 try:
-                    r = call_pipeline(base, fixture, room["room_type"], style, pipe["mode"], influence)
+                    r = call_pipeline(base, fixture, room["room_type"], style, pipe["mode"], influence, extra_fields=cfg.get("request_fields"))
                     out.write_bytes(base64.b64decode(r["data"]["image"]))
                     dbg.write_text(json.dumps(r["data"].get("debug", {}), indent=2))
                     case["results"][slug] = {

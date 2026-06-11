@@ -50,5 +50,6 @@ export interface GenerateVisualizationParams {
     }) | null;
     contractorId?: string;
     renovationSelectionIds?: import('./catalogue.js').RenovationSelectionIds;
+    verifyAGT?: boolean;
 }
 //# sourceMappingURL=core.d.ts.map

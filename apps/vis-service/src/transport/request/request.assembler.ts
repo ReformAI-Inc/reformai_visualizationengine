@@ -37,6 +37,7 @@ export interface ProcessedVisualizationData {
     previousResultImage?: MultipartFile & { buffer: Buffer };
     contractorId?: string;
     renovationSelectionIds?: RenovationSelectionIds;
+    verifyAGT: boolean;
 }
 
 export const processVisualizationFormData = async (
@@ -57,6 +58,7 @@ export const processVisualizationFormData = async (
     const geometryPreservation = fields['geometryPreservation'] !== undefined ? parseBoolean(fields['geometryPreservation'].toString()) : false;
     const phaseAnchoring = fields['phaseAnchoring'] !== undefined ? parseBoolean(fields['phaseAnchoring'].toString()) : false;
     const phaseAnchoringV2 = fields['phaseAnchoringV2'] !== undefined ? parseBoolean(fields['phaseAnchoringV2'].toString()) : false;
+    const verifyAGT = fields['verifyAGT'] !== undefined ? parseBoolean(fields['verifyAGT'].toString()) : false;
     const pipelineMode = queryMode ?? (fields['pipelineMode']?.toString() as any) ?? 'balanced_v7';
 
     let stylePreset = parseJSON<StylePreset>(fields['stylePreset']?.toString(), 'stylePreset');
@@ -77,6 +79,7 @@ export const processVisualizationFormData = async (
         geometryPreservation,
         phaseAnchoring,
         phaseAnchoringV2,
+        verifyAGT,
         pipelineMode,
         stylePreset,
         renovationSelectionIds,
@@ -108,6 +111,7 @@ export const processVisualizationFormData = async (
         previousResultImage,
         contractorId,
         renovationSelectionIds: validatedData.renovationSelectionIds,
+        verifyAGT: validatedData.verifyAGT,
     };
 };
 

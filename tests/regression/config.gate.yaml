@@ -22,6 +22,12 @@ gate:
   max_candidate_hard_rejections: 0     # any hard rejection on the candidate => FAIL
   max_median_score_drop: 0.25          # vs last accepted baseline (same candidate+judge_version)
 
+# Optional extra form fields posted with every generation request.
+# Uncomment to run the canonical set with post-generation AGT verification ON
+# (backlog 10 ON/OFF evidence run):
+# request_fields:
+#   verifyAGT: "true"
+
 pipelines:
   - mode: baseline_original
     role: anchor

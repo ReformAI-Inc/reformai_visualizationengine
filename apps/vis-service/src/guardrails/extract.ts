@@ -126,17 +126,18 @@ const parseAndValidate = (raw: string): ArchitecturalGroundTruth => {
     };
 };
 
-export const extractArchitecturalGroundTruth = async (
-    roomImage: MultipartFile & { buffer: Buffer },
+// Core extraction over raw image data. Used both for the input room photo
+// (pre-generation) and for generated output images (post-generation verification).
+export const extractAGTFromImageData = async (
+    base64Data: string,
+    mimeType: string,
 ): Promise<ArchitecturalGroundTruth> => {
-    const imageData = roomImage.buffer.toString('base64');
-
     const response = await ai.models.generateContent({
         model: AGT_EXTRACTION_MODEL,
         contents: {
             parts: [
                 { text: EXTRACTION_PROMPT },
-                { inlineData: { data: imageData, mimeType: roomImage.mimetype } },
+                { inlineData: { data: base64Data, mimeType } },
             ],
         },
     });
@@ -148,6 +149,11 @@ export const extractArchitecturalGroundTruth = async (
 
     return parseAndValidate(cleaned);
 };
+
+export const extractArchitecturalGroundTruth = async (
+    roomImage: MultipartFile & { buffer: Buffer },
+): Promise<ArchitecturalGroundTruth> =>
+    extractAGTFromImageData(roomImage.buffer.toString('base64'), roomImage.mimetype);
 
 
 
