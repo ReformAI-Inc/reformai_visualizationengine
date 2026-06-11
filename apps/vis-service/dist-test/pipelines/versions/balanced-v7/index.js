@@ -6,7 +6,9 @@ import { resolveRenovationSelections, hasActiveSelections, } from '../../../cata
 import { buildRequestStructure, normalizeInjectedItems, } from '../../../shared/generation-parts.js';
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
 import { generateWithVerification } from '../../../guardrails/verified-generation.js';
-export const generateVisualization = async (params) => {
+// modelId undefined = DEFAULT_IMAGE_MODEL. The balanced_v7_nb2 comparison
+// mode runs these exact prompts on the Gemini 3.x successor model.
+export const generateWithModel = async (params, modelId, debugMode) => {
     const { roomImage, roomType, stylePreset, moodBoardImages, textPrompt, styleInfluence, contractorId, renovationSelectionIds, } = params;
     const { injectedItems, item, hasInjectedItem, shimmedFromFurnitureImage, } = normalizeInjectedItems(params, 'balanced_v7');
     const hasMoodboards = moodBoardImages.length > 0;
@@ -57,12 +59,13 @@ export const generateVisualization = async (params) => {
         },
         itemImage: item?.image ?? null,
     });
-    const { image, verification } = await generateWithVerification(parts, rawAGT, classifiedAGT, { enabled: params.verifyAGT === true });
+    const { image, verification } = await generateWithVerification(parts, rawAGT, classifiedAGT, { enabled: params.verifyAGT === true, modelId });
     return {
         image,
         debug: {
-            pipelineMode: 'balanced_v7',
+            pipelineMode: debugMode,
             templateVersion: '7.0.0',
+            imageModelId: modelId ?? null,
             agtVerification: verification,
             agtStatus,
             agtFallbackReason,
@@ -101,4 +104,10 @@ export const generateVisualization = async (params) => {
         },
     };
 };
+export const generateVisualization = async (params) => generateWithModel(params, undefined, 'balanced_v7');
+// NB2 comparison mode: identical V7 prompts/guardrails on the Gemini 3.x
+// successor model. Override the model id via NB2_IMAGE_MODEL if the GA id
+// differs in your environment.
+export const NB2_IMAGE_MODEL = process.env.NB2_IMAGE_MODEL || 'gemini-3.1-flash-image';
+export const generateVisualizationNB2 = async (params) => generateWithModel(params, NB2_IMAGE_MODEL, 'balanced_v7_nb2');
 //# sourceMappingURL=index.js.map

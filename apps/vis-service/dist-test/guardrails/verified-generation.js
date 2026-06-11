@@ -16,7 +16,7 @@
 // Cloud Run has a 26s function timeout; each retry costs one
 // extraction (~2-3s) plus one generation (~5-10s).
 // ============================================================
-import { callGemini } from '../models/gemini.client.js';
+import { callImageModel } from '../models/image-model.client.js';
 import { extractAGTFromImageData } from './extract.js';
 import { buildViolationFeedback, diffAGT } from './verify.js';
 const MAX_RETRIES = 1;
@@ -24,7 +24,7 @@ const MAX_RETRIES = 1;
 const GENERATED_IMAGE_MIME = 'image/png';
 export const generateWithVerification = async (parts, inputAGT, inputClassified, opts) => {
     if (!opts.enabled || inputClassified.hard_fact_fields.length === 0) {
-        const { image } = await callGemini(parts);
+        const { image } = await callImageModel({ parts, modelId: opts.modelId });
         return { image, verification: null };
     }
     let attempts = 0;
@@ -32,7 +32,7 @@ export const generateWithVerification = async (parts, inputAGT, inputClassified,
     let best = null;
     while (true) {
         attempts++;
-        const { image } = await callGemini(currentParts);
+        const { image } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
         let diff;
         try {
             const outputAGT = await extractAGTFromImageData(image, GENERATED_IMAGE_MIME);

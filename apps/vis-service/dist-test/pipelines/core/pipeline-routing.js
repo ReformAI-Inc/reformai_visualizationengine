@@ -23,6 +23,7 @@ const VALID_PIPELINE_MODES = [
     'balanced_v5',
     'balanced_v6',
     'balanced_v7',
+    'balanced_v7_nb2',
     'balanced_v8',
     'improved_current',
 ];

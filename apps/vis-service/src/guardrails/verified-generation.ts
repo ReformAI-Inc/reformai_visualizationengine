@@ -17,7 +17,7 @@
 // extraction (~2-3s) plus one generation (~5-10s).
 // ============================================================
 
-import { callGemini } from '../models/gemini.client.js';
+import { callImageModel } from '../models/image-model.client.js';
 import type { GeminiPart } from '../shared/generation-parts.js';
 import type {
     AGTVerificationResult,
@@ -40,10 +40,10 @@ export const generateWithVerification = async (
     parts: GeminiPart[],
     inputAGT: ArchitecturalGroundTruth,
     inputClassified: ClassifiedAGT,
-    opts: { enabled: boolean },
+    opts: { enabled: boolean; modelId?: string },
 ): Promise<VerifiedGenerationResult> => {
     if (!opts.enabled || inputClassified.hard_fact_fields.length === 0) {
-        const { image } = await callGemini(parts);
+        const { image } = await callImageModel({ parts, modelId: opts.modelId });
         return { image, verification: null };
     }
 
@@ -53,7 +53,7 @@ export const generateWithVerification = async (
 
     while (true) {
         attempts++;
-        const { image } = await callGemini(currentParts);
+        const { image } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
 
         let diff: AGTDiff;
         try {

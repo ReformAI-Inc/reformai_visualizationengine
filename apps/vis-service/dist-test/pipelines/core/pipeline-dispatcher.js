@@ -23,6 +23,7 @@ const PIPELINE_HANDLERS = {
     balanced_v5: balancedV5Service.generateVisualization,
     balanced_v6: balancedV5Service.generateVisualization, // aliased: resolveHandlerMode maps balanced_v6 -> balanced_v5
     balanced_v7: balancedV7Service.generateVisualization,
+    balanced_v7_nb2: balancedV7Service.generateVisualizationNB2,
     balanced_v8: balancedV8Service.generateVisualization,
     improved_current: improvedService.generateVisualization,
 };
@@ -38,6 +39,7 @@ const PIPELINE_LOGS = {
     balanced_v5: '[Dispatcher] Routing to BALANCED V5 pipeline (Lean V5 - moodboard integration)',
     balanced_v6: '[Dispatcher] Routing BALANCED V6 (explicit alias of V5 handler)',
     balanced_v7: '[Dispatcher] Routing to BALANCED V7 pipeline (AGT confidence-gated enforcement)',
+    balanced_v7_nb2: '[Dispatcher] Routing to BALANCED V7-NB2 comparison (V7 prompts on Gemini 3.x successor model)',
     balanced_v8: '[Dispatcher] Routing to BALANCED V8 pipeline (catalogue-first, installer framing)',
     improved_current: '[Dispatcher] Routing to IMPROVED pipeline',
 };

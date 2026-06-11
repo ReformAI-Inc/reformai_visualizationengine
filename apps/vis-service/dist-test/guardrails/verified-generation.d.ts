@@ -6,5 +6,6 @@ export interface VerifiedGenerationResult {
 }
 export declare const generateWithVerification: (parts: GeminiPart[], inputAGT: ArchitecturalGroundTruth, inputClassified: ClassifiedAGT, opts: {
     enabled: boolean;
+    modelId?: string;
 }) => Promise<VerifiedGenerationResult>;
 //# sourceMappingURL=verified-generation.d.ts.map

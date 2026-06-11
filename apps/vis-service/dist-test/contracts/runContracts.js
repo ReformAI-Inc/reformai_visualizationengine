@@ -168,6 +168,13 @@ const outputAGT = (overrides) => ({
     assert.equal(buildViolationFeedback([]), '', 'no violations produces empty feedback');
     console.log('PASS verify: violation feedback block well-formed');
 }
+// ── NB2 comparison-mode contracts ─────────────────────────────────────────────
+{
+    assert.equal(resolveHandlerMode('balanced_v7_nb2'), 'balanced_v7_nb2', 'nb2 mode routes to its own handler');
+    assert.equal(normalizePipelineModeInput('balanced_v7_nb2'), 'balanced_v7_nb2', 'nb2 mode is valid request input');
+    assert.equal(resolvePipelineMode(undefined), 'balanced_v7', 'default remains balanced_v7 (nb2 is opt-in)');
+    console.log('PASS balanced_v7_nb2 comparison mode routes and validates; default unchanged');
+}
 // ── Provider registry contracts ───────────────────────────────────────────────
 {
     const providers = [{ id: 'gemini', supports: (m) => m.startsWith('gemini-') }];
@@ -275,5 +282,5 @@ const outputAGT = (overrides) => ({
     assert.ok(!withoutFacts.includes('Verified hard facts'), 'AGT line absent when no hard facts');
     console.log('PASS V7 hierarchy inserts AGT line only with hard facts');
 }
-console.log(`\nContract checks passed: 20/20`);
+console.log(`\nContract checks passed: 21/21`);
 //# sourceMappingURL=runContracts.js.map

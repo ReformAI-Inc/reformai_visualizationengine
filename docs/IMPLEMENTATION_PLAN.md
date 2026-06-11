@@ -342,7 +342,7 @@ async function callImageModel(req: ImageGenRequest): Promise<ImageGenResult> {
 | 9 | **Done** (2026-06-11) | verified-generation commit | `guardrails/verified-generation.ts` wired into V7+V8 behind `verifyAGT` request flag (default OFF); harness can enable via `request_fields` in gate config; debug payload carries `agtVerification` |
 | 10 | Not started | | |
 | 11 | **Done** (2026-06-11) | provider abstraction commit | `models/{image-model.client,provider-registry,providers/gemini}.ts`; `callGemini` kept as shim; AGT extraction rides the shared client; contracts 20/20 |
-| 12 | Not started | | |
+| 12 | **Code done; run pending** (2026-06-11) | nb2 mode commit | `balanced_v7_nb2` mode shipped (V7 prompts on `gemini-3.1-flash-image`, override via `NB2_IMAGE_MODEL` env); head-to-head gate run pending Anthropic credits — run with `verifyAGT` ON per backlog-10 evidence plan |
 | 13 | Not started | | |
 | 14 | Not started | | |
 | 15 | Not started | | |
