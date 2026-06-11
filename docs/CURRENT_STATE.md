@@ -6,7 +6,7 @@ Authoritative lifecycle source: `docs/PLATFORM_STATUS.md`
 ## Runtime Summary
 - Canonical active pipeline: `balanced_v7`
 - Catalogue-first comparison candidate: `balanced_v8` (regression pending; not canonical)
-- Explicit comparison pipeline: `balanced_v6` (separate handler module, no silent alias routing)
+- Comparison mode `balanced_v6`: explicit alias of the `balanced_v5` handler (declared in routing, surfaced in debug metadata)
 - Historical benchmark modes remain callable for comparison/regression workflows
 
 ## Repository Status
@@ -21,7 +21,7 @@ The backend structure cleanup is complete and now organized by responsibility un
 | Pipeline routing | `apps/vis-service/src/pipelines/core/pipeline-routing.ts` |
 | Pipeline dispatcher | `apps/vis-service/src/pipelines/core/pipeline-dispatcher.ts` |
 | V5 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v5/index.ts` |
-| V6 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v6/index.ts` |
+| V6 alias (no module) | `apps/vis-service/src/pipelines/core/pipeline-routing.ts` (`HANDLER_ALIASES`) |
 | V7 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v7/index.ts` |
 | V8 pipeline | `apps/vis-service/src/pipelines/versions/balanced-v8/index.ts` |
 | Prompt blocks | `apps/vis-service/src/prompts/blocks/` |

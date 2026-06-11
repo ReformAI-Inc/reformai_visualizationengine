@@ -14,7 +14,7 @@ All paths are relative to `apps/vis-service/src/`.
 | `baseline_original` | Historical baseline anchor | `pipelines/legacy-services/baseline/geminiService.ts` |
 | `balanced_v1` to `balanced_v4_1` | Historical benchmark family | `pipelines/legacy-services/*` |
 | `balanced_v5` | Frozen benchmark reference | `pipelines/versions/balanced-v5/index.ts` |
-| `balanced_v6` | Explicit comparison pipeline | `pipelines/versions/balanced-v6/index.ts` |
+| `balanced_v6` | Explicit alias of `balanced_v5` handler | `pipelines/core/pipeline-routing.ts` (HANDLER_ALIASES) |
 | `balanced_v7` | Canonical active candidate | `pipelines/versions/balanced-v7/index.ts` |
 | `balanced_v8` | Catalogue-first comparison candidate | `pipelines/versions/balanced-v8/index.ts` |
 | `improved_current` | Historical comparison path | `pipelines/legacy-services/improved/geminiService.ts` |
@@ -22,7 +22,7 @@ All paths are relative to `apps/vis-service/src/`.
 ## 3. Routing Semantics
 - Mode resolution lives in `pipelines/core/pipeline-routing.ts`.
 - Omitted mode resolves to `balanced_v7`.
-- `balanced_v6` resolves to its own explicit handler module (no silent V6->V5 handler alias).
+- `balanced_v6` is an explicit, documented alias of the `balanced_v5` handler (declared in `HANDLER_ALIASES`; the debug payload records both `pipelineMode: balanced_v6` and `aliasedToHandler: balanced_v5`). The former 17-line relabel-wrapper module was removed 2026-06-11.
 
 ## 4. Current Source Layout
 ```

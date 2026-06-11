@@ -9,7 +9,6 @@ import * as balancedV3_0Service from '../legacy-services/balanced_v3_0/geminiSer
 import * as balancedV4_0Service from '../legacy-services/balanced_v4_0/geminiService.js';
 import * as balancedV4_1Service from '../legacy-services/balanced_v4_1/geminiService.js';
 import * as balancedV5Service from '../versions/balanced-v5/index.js';
-import * as balancedV6Service from '../versions/balanced-v6/index.js';
 import * as balancedV7Service from '../versions/balanced-v7/index.js';
 import * as balancedV8Service from '../versions/balanced-v8/index.js';
 import { resolveDispatchModes, resolveHandlerMode, resolvePipelineMode, type PipelineMode } from './pipeline-routing.js';
@@ -26,7 +25,7 @@ const PIPELINE_HANDLERS: Record<PipelineMode, PipelineHandler> = {
     balanced_v4_0: balancedV4_0Service.generateVisualization,
     balanced_v4_1: balancedV4_1Service.generateVisualization,
     balanced_v5: balancedV5Service.generateVisualization,
-    balanced_v6: balancedV6Service.generateVisualization,
+    balanced_v6: balancedV5Service.generateVisualization, // aliased: resolveHandlerMode maps balanced_v6 -> balanced_v5
     balanced_v7: balancedV7Service.generateVisualization,
     balanced_v8: balancedV8Service.generateVisualization,
     improved_current: improvedService.generateVisualization,
@@ -42,7 +41,7 @@ const PIPELINE_LOGS: Record<PipelineMode, string> = {
     balanced_v4_0: '[Dispatcher] Routing to BALANCED V4.0 pipeline',
     balanced_v4_1: '[Dispatcher] Routing to BALANCED V4.1 pipeline',
     balanced_v5: '[Dispatcher] Routing to BALANCED V5 pipeline (Lean V5 - moodboard integration)',
-    balanced_v6: '[Dispatcher] Routing to BALANCED V6 pipeline (V5 + catalogue anchor integration)',
+    balanced_v6: '[Dispatcher] Routing BALANCED V6 (explicit alias of V5 handler)',
     balanced_v7: '[Dispatcher] Routing to BALANCED V7 pipeline (AGT confidence-gated enforcement)',
     balanced_v8: '[Dispatcher] Routing to BALANCED V8 pipeline (catalogue-first, installer framing)',
     improved_current: '[Dispatcher] Routing to IMPROVED pipeline',
@@ -63,9 +62,16 @@ export const dispatchWithHandlers = async (
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
 ): Promise<{ image: string; debug: any }> => {
-    const { logMode } = resolveDispatchModes(params.pipelineMode);
+    const { logMode, handlerMode } = resolveDispatchModes(params.pipelineMode);
     console.log(PIPELINE_LOGS[logMode]);
-    return dispatchWithHandlers(params, PIPELINE_HANDLERS);
+    const result = await dispatchWithHandlers(params, PIPELINE_HANDLERS);
+    if (logMode !== handlerMode) {
+        return {
+            ...result,
+            debug: { ...result.debug, pipelineMode: logMode, aliasedToHandler: handlerMode },
+        };
+    }
+    return result;
 };
 
 

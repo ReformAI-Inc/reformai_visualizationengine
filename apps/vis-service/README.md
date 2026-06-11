@@ -5,7 +5,7 @@ Fastify backend for the Visualization Engine.
 ## Canonical and Comparison Modes
 - Canonical active candidate: `balanced_v7`
 - Catalogue-first comparison candidate: `balanced_v8` (regression pending)
-- Explicit comparison mode: `balanced_v6` (separate pipeline module)
+- Comparison mode `balanced_v6`: explicit alias of the `balanced_v5` handler
 - Historical/frozen benchmark modes remain callable for comparison workflows.
 
 Authoritative lifecycle source: `../../docs/PLATFORM_STATUS.md`
@@ -13,7 +13,7 @@ Authoritative lifecycle source: `../../docs/PLATFORM_STATUS.md`
 ## Dispatcher Semantics
 - Request mode is resolved in `src/pipelines/core/pipeline-routing.ts`.
 - Omitted mode defaults to `balanced_v7`.
-- `balanced_v6` resolves to its own explicit handler module (`src/pipelines/versions/balanced-v6`).
+- `balanced_v6` is an explicit alias of the `balanced_v5` handler (`HANDLER_ALIASES` in `pipeline-routing.ts`); debug metadata records the requested mode and the aliased handler.
 
 ## Folder Responsibilities
 - `src/transport`: HTTP transport layer (controllers, multipart parsing, schemas)

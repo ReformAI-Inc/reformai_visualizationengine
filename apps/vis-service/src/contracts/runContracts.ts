@@ -54,15 +54,15 @@ const baseRequest: GenerateVisualizationParams = {
 
 {
     const result = resolveHandlerMode('balanced_v6');
-    assert.equal(result, 'balanced_v6', 'balanced_v6 resolves to explicit balanced_v6 handler');
-    console.log('PASS balanced_v6 resolves to explicit balanced_v6 handler');
+    assert.equal(result, 'balanced_v5', 'balanced_v6 is an explicit alias of the balanced_v5 handler');
+    console.log('PASS balanced_v6 aliases to balanced_v5 handler explicitly');
 }
 
 {
     const { logMode, handlerMode } = resolveDispatchModes('balanced_v6');
     assert.equal(logMode, 'balanced_v6', 'balanced_v6 keeps explicit log mode');
-    assert.equal(handlerMode, 'balanced_v6', 'while executing balanced_v6 handler mode');
-    console.log('PASS balanced_v6 keeps explicit log mode while executing balanced_v6 handler mode');
+    assert.equal(handlerMode, 'balanced_v5', 'while executing the aliased balanced_v5 handler');
+    console.log('PASS balanced_v6 keeps explicit log mode while executing aliased balanced_v5 handler');
 }
 
 {
@@ -165,8 +165,8 @@ const baseRequest: GenerateVisualizationParams = {
     ) as Record<PipelineMode, any>;
 
     await dispatchWithHandlers({ ...baseRequest, pipelineMode: 'balanced_v6' }, fakeHandlers);
-    assert.equal(calledWith, 'balanced_v6', 'dispatcher resolves balanced_v6 to balanced_v6 handler');
-    console.log('PASS dispatcher resolves balanced_v6 to balanced_v6 handler');
+    assert.equal(calledWith, 'balanced_v5', 'dispatcher resolves balanced_v6 to aliased balanced_v5 handler');
+    console.log('PASS dispatcher resolves balanced_v6 to aliased balanced_v5 handler');
 }
 
 {
