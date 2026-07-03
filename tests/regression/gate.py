@@ -3,20 +3,33 @@
 
 Usage:
   python gate.py                                  # run canonical set vs balanced_v7, judge, verdict
-  python gate.py --candidate balanced_v8          # gate a different candidate mode
+  python gate.py --candidate balanced_v7_nb2      # gate a different candidate mode
   python gate.py --run-dir runs/run_YYYY...       # verdict on an existing evaluated run (no generation)
   python gate.py --set-baseline [...]             # additionally record this run as the accepted baseline
   python gate.py --dry-run [...]                  # compute verdict but do not append to the ledger
+  python gate.py --baseline-mode balanced_v7      # compare against another mode's accepted baseline
+                                                  # (default: gate.baseline_mode in config — this is how a
+                                                  #  NEW candidate mode is judged against production)
 
 Verdict rules (thresholds in config.gate.yaml under `gate:`):
-  FAIL if any canonical case has a candidate hard rejection.
+  FAIL if any canonical case has a candidate hard rejection (judge-reported).
+  FAIL if any candidate output has a validity-classifier FAIL verdict.
   FAIL if candidate median weighted score drops more than max_median_score_drop
-       below the last accepted baseline for the same (candidate_mode, judge_version,
-       gate_version). With no baseline on record, the score check is skipped and
-       the verdict notes NO_BASELINE — run once with --set-baseline to establish one.
+       below the last accepted baseline for (baseline_mode, judge_version).
+  FAIL if any single shared case drops more than max_single_case_drop vs baseline.
+  FAIL if there is no accepted baseline to compare against (NO_BASELINE is a
+       failure, not a bye — override with --allow-no-baseline only for the very
+       first baseline-establishing run).
+
+Infra-invalid runs exit 2 WITHOUT a verdict (rerun with --eval-only, then re-gate):
+  - fewer than gate.min_cases_evaluated judged cases, or any skipped case
+  - validity classifier coverage incomplete or in ERROR state
+    (--allow-validity-gaps to re-verdict pre-gate-2.0 historical runs)
+  - session-judged (hand-patched) evaluations present
+    (--allow-session-judge to re-verdict historical runs; never for promotion)
 
 Every non-dry run appends one JSON line to runs/ledger.jsonl (append-only trend record).
-Exit code: 0 = PASS, 1 = FAIL, 2 = usage/config error.
+Exit code: 0 = PASS, 1 = FAIL, 2 = usage/config/infra error.
 """
 
 import argparse
@@ -66,6 +79,29 @@ def newest_run_dir(before):
     return max(candidates, key=lambda d: d.stat().st_mtime)
 
 
+def preflight_credits(judge_model):
+    """Fail fast if the Anthropic API is unusable (billing, key) BEFORE paid generation.
+
+    Two P0 stalls (2026-06-11) came from credits running out mid-judging; this
+    turns that failure mode into an upfront exit 2.
+    """
+    api_key = os.getenv("ANTHROPIC_API_KEY")
+    if not api_key:
+        sys.exit("preflight: ANTHROPIC_API_KEY is not set (judging would fail after paid generation)")
+    try:
+        import anthropic
+    except ImportError:
+        sys.exit("preflight: anthropic package not installed (pip install anthropic)")
+    try:
+        anthropic.Anthropic(api_key=api_key).messages.create(
+            model=judge_model, max_tokens=1,
+            messages=[{"role": "user", "content": "ping"}],
+        )
+    except Exception as e:
+        sys.exit(f"preflight: Anthropic API check failed — fix before spending on generation.\n  {e}")
+    print(f"preflight: Anthropic API ok (judge model {judge_model})")
+
+
 def execute_regression(config_path):
     before = set(RUNS_DIR.glob("run_*"))
     env = {**os.environ, "REGRESSION_CONFIG": str(config_path)}
@@ -79,9 +115,10 @@ def execute_regression(config_path):
 
 
 def candidate_stats(manifest):
-    """Extract candidate hard rejections and weighted scores from a 2-pipeline manifest."""
+    """Extract candidate hard rejections, scores, judges, and validity from a 2-pipeline manifest."""
     if len(manifest.get("pipelines", [])) != 2:
         sys.exit("gate verdicts require a two-pipeline run (anchor + candidate)")
+    candidate_slug = manifest["pipelines"][1].get("slug", "candidate")
     cases, skipped = [], []
     for case in manifest["cases"]:
         ev = case.get("ai_evaluation") or {}
@@ -89,17 +126,29 @@ def candidate_stats(manifest):
         if not cand or cand.get("weighted_score") is None:
             skipped.append(case["case_id"])
             continue
+        validity = (case.get("validity") or {}).get(candidate_slug)
         cases.append({
             "case_id": case["case_id"],
             "weighted_score": cand["weighted_score"],
             "hard_rejections": cand.get("hard_rejections") or [],
+            # absent judge field = legacy API-judged manifest (pre-provenance stamping);
+            # run_regression.py now stamps the API model id on every evaluation.
+            "judge": ev.get("judge"),
+            "validity_verdict": validity.get("verdict") if isinstance(validity, dict) else None,
+            "validity_violations": (validity or {}).get("violations", []) if isinstance(validity, dict) else [],
         })
     if not cases:
         sys.exit("no evaluated cases found in manifest (was the run judged? try --eval-only first)")
     return cases, skipped
 
 
-def last_accepted_baseline(candidate_mode, judge_version, gate_version):
+def last_accepted_baseline(baseline_mode, judge_version):
+    """Last accepted baseline for baseline_mode under the same judge_version.
+
+    Matches on judge_version but NOT gate_version: scores come from the judge,
+    so judge_version is the comparability key; gate_version tracks verdict
+    logic and may advance without invalidating score history.
+    """
     if not LEDGER.exists():
         return None
     baseline = None
@@ -108,9 +157,8 @@ def last_accepted_baseline(candidate_mode, judge_version, gate_version):
             continue
         entry = json.loads(line)
         if (entry.get("accepted_baseline")
-                and entry.get("candidate_mode") == candidate_mode
-                and entry.get("judge_version") == judge_version
-                and entry.get("gate_version") == gate_version):
+                and entry.get("candidate_mode") == baseline_mode
+                and entry.get("judge_version") == judge_version):
             baseline = entry  # last matching wins (append-only file, chronological)
     return baseline
 
@@ -118,22 +166,38 @@ def last_accepted_baseline(candidate_mode, judge_version, gate_version):
 def main():
     ap = argparse.ArgumentParser(description="Regression gate (PASS/FAIL + ledger)")
     ap.add_argument("--candidate", default=None, help="candidate pipeline mode (default: config.gate.yaml pipelines[1])")
+    ap.add_argument("--baseline-mode", default=None,
+                    help="mode whose accepted baseline the candidate is compared against "
+                         "(default: gate.baseline_mode in config, else the candidate mode itself)")
     ap.add_argument("--run-dir", default=None, help="verdict on an existing evaluated run directory")
     ap.add_argument("--set-baseline", action="store_true", help="record this run as the accepted baseline")
     ap.add_argument("--dry-run", action="store_true", help="compute verdict without writing the ledger")
+    ap.add_argument("--allow-no-baseline", action="store_true",
+                    help="do not FAIL on missing baseline (ONLY for the first baseline-establishing run)")
+    ap.add_argument("--allow-validity-gaps", action="store_true",
+                    help="tolerate missing/ERROR validity classification (re-verdicting historical runs only)")
+    ap.add_argument("--allow-session-judge", action="store_true",
+                    help="tolerate session-judged evaluations (re-verdicting historical runs only; never promotion)")
+    ap.add_argument("--skip-preflight", action="store_true", help="skip the Anthropic API credit preflight")
     args = ap.parse_args()
 
     cfg = load_gate_config()
     candidate_mode = args.candidate or cfg["pipelines"][1]["mode"]
     judge_version = str(cfg.get("judge_version", "unversioned"))
     gate_version = str(cfg.get("gate_version", "unversioned"))
+    judge_model = str(cfg.get("judge_model", "claude-opus-4-7"))
     thresholds = cfg["gate"]
+    baseline_mode = args.baseline_mode or thresholds.get("baseline_mode") or candidate_mode
+    min_cases = int(thresholds.get("min_cases_evaluated", 0))
+    max_case_drop = thresholds.get("max_single_case_drop")
 
     if args.run_dir:
         run_dir = Path(args.run_dir)
         if not (run_dir / "manifest.json").exists():
             sys.exit(f"no manifest.json in {run_dir}")
     else:
+        if not args.skip_preflight:
+            preflight_credits(judge_model)
         run_dir = execute_regression(build_run_config(cfg, candidate_mode))
 
     manifest = json.loads((run_dir / "manifest.json").read_text())
@@ -142,25 +206,79 @@ def main():
         manifest_candidate = manifest["pipelines"][1]["mode"]
         if manifest_candidate != candidate_mode:
             candidate_mode = manifest_candidate
+            baseline_mode = args.baseline_mode or thresholds.get("baseline_mode") or candidate_mode
             print(f"note: gating manifest candidate '{candidate_mode}' from {run_dir}")
 
     cases, skipped = candidate_stats(manifest)
+
+    # ── Infra validity: a run whose evidence is incomplete gets NO verdict (exit 2) ──
+    infra_problems = []
+    if skipped:
+        infra_problems.append(
+            f"{len(skipped)} case(s) skipped (unjudged/unparseable): {', '.join(skipped)} — "
+            f"rerun judging with --eval-only, then re-gate")
+    if min_cases and len(cases) < min_cases:
+        infra_problems.append(f"only {len(cases)} evaluated cases; gate requires {min_cases}")
+
+    session_judged = sorted({c["judge"] for c in cases if c["judge"] and str(c["judge"]).startswith("session-")})
+    if session_judged and not args.allow_session_judge:
+        infra_problems.append(
+            f"session-judged evaluations present ({', '.join(session_judged)}) — not valid promotion "
+            f"evidence; re-judge via --eval-only (or --allow-session-judge for historical re-verdicts)")
+
+    validity_missing = [c["case_id"] for c in cases if c["validity_verdict"] is None]
+    validity_errors = [c["case_id"] for c in cases if c["validity_verdict"] == "ERROR"]
+    if (validity_missing or validity_errors) and not args.allow_validity_gaps:
+        detail = []
+        if validity_missing:
+            detail.append(f"missing for {len(validity_missing)} case(s)")
+        if validity_errors:
+            detail.append(f"ERROR for {len(validity_errors)} case(s)")
+        infra_problems.append(
+            f"validity classification incomplete ({'; '.join(detail)}) — the independent structural "
+            f"check must cover every case (--allow-validity-gaps for historical re-verdicts)")
+
+    if infra_problems:
+        print(f"\n=== GATE INVALID (no verdict) === candidate={candidate_mode} run={manifest.get('run_id', run_dir.name)}")
+        for p in infra_problems:
+            print(f"  INVALID: {p}")
+        sys.exit(2)
+
+    # ── Quality verdict ──
     scores = [c["weighted_score"] for c in cases]
     median_score = statistics.median(scores)
     rejected = [c for c in cases if c["hard_rejections"]]
+    validity_failed = [c for c in cases if c["validity_verdict"] == "FAIL"]
 
-    baseline = last_accepted_baseline(candidate_mode, judge_version, gate_version)
+    baseline = last_accepted_baseline(baseline_mode, judge_version)
     failures = []
     if len(rejected) > thresholds["max_candidate_hard_rejections"]:
         for c in rejected:
             failures.append(f"hard rejection on {c['case_id']}: {'; '.join(c['hard_rejections'])}")
+    for c in validity_failed:
+        failures.append(
+            f"validity classifier FAIL on {c['case_id']}: {'; '.join(c['validity_violations']) or 'structural violation'}")
     if baseline:
         drop = baseline["median_score"] - median_score
         if drop > thresholds["max_median_score_drop"]:
             failures.append(
                 f"median weighted score {median_score:.2f} dropped {drop:.2f} below accepted "
-                f"baseline {baseline['median_score']:.2f} (run {baseline['run_id']})"
+                f"baseline {baseline['median_score']:.2f} ({baseline_mode}, run {baseline['run_id']})"
             )
+        if max_case_drop is not None:
+            base_per_case = baseline.get("per_case") or {}
+            for c in cases:
+                base_score = base_per_case.get(c["case_id"])
+                if base_score is not None and (base_score - c["weighted_score"]) > float(max_case_drop):
+                    failures.append(
+                        f"single-case drop on {c['case_id']}: {c['weighted_score']:.2f} vs baseline "
+                        f"{base_score:.2f} (limit {float(max_case_drop):.2f})")
+    elif not args.allow_no_baseline:
+        failures.append(
+            f"NO_BASELINE: no accepted baseline for mode '{baseline_mode}' under judge_version "
+            f"{judge_version} — a gate that cannot compare cannot pass. Establish one explicitly "
+            f"(--set-baseline --allow-no-baseline on a reviewed run) or point --baseline-mode at "
+            f"the production mode.")
 
     verdict = "FAIL" if failures else "PASS"
     entry = {
@@ -168,12 +286,16 @@ def main():
         "run_id": manifest.get("run_id", run_dir.name),
         "run_dir": str(run_dir.relative_to(ROOT)) if run_dir.is_relative_to(ROOT) else str(run_dir),
         "candidate_mode": candidate_mode,
+        "baseline_mode": baseline_mode,
         "anchor_mode": manifest["pipelines"][0]["mode"],
         "judge_version": judge_version,
+        "judge_model": judge_model,
         "gate_version": gate_version,
         "cases_evaluated": len(cases),
         "cases_skipped": skipped,
         "hard_rejection_count": len(rejected),
+        "validity_fail_count": len(validity_failed),
+        "session_judged": session_judged,
         "median_score": round(median_score, 3),
         "mean_score": round(statistics.mean(scores), 3),
         "per_case": {c["case_id"]: c["weighted_score"] for c in cases},
@@ -188,13 +310,15 @@ def main():
             f.write(json.dumps(entry) + "\n")
 
     print(f"\n=== GATE {verdict} === candidate={candidate_mode} run={entry['run_id']}")
-    print(f"cases={len(cases)} (skipped={len(skipped)}) hard_rejections={len(rejected)} "
+    print(f"cases={len(cases)} hard_rejections={len(rejected)} validity_fails={len(validity_failed)} "
           f"median={median_score:.2f} mean={entry['mean_score']:.2f}")
     if baseline:
-        print(f"baseline: median {baseline['median_score']:.2f} from {baseline['run_id']}")
-    else:
-        print("NO_BASELINE on record for this candidate/judge/gate version "
-              "(score-drop check skipped; use --set-baseline on a PASS run to establish one)")
+        print(f"baseline: {baseline_mode} median {baseline['median_score']:.2f} from {baseline['run_id']}")
+    if session_judged:
+        print(f"note: session-judged cases tolerated via --allow-session-judge ({', '.join(session_judged)})")
+    if (validity_missing or validity_errors) and args.allow_validity_gaps:
+        print(f"note: validity gaps tolerated via --allow-validity-gaps "
+              f"(missing={len(validity_missing)}, error={len(validity_errors)})")
     for f_ in failures:
         print(f"  FAIL: {f_}")
     if entry["accepted_baseline"]:
