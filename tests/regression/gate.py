@@ -50,6 +50,14 @@ RUNS_DIR = ROOT / "runs"
 LEDGER = RUNS_DIR / "ledger.jsonl"
 GATE_CONFIG = TESTS_DIR / "config.gate.yaml"
 
+# Same env loading as run_regression.py — the credit preflight needs
+# ANTHROPIC_API_KEY before the subprocess ever runs.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(ROOT / ".env", override=True)
+except ImportError:
+    pass  # rely on already-set environment variables
+
 
 def load_gate_config():
     with open(GATE_CONFIG) as f:
