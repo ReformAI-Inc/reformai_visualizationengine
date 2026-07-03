@@ -19,13 +19,36 @@ export interface ImageGenRequest {
 
 export interface ImageGenResult {
     image: string; // base64-encoded image data
+    mimeType: string; // actual mime of the returned image (provider-reported; png fallback)
     modelId: string;
 }
 
 export const callImageModel = async (req: ImageGenRequest): Promise<ImageGenResult> => {
     const modelId = req.modelId ?? DEFAULT_IMAGE_MODEL;
     const provider = await providerFor(modelId);
-    return provider.generateImage(req.parts, modelId);
+    const startedAt = Date.now();
+    try {
+        const result = await provider.generateImage(req.parts, modelId);
+        console.log('[telemetry]', JSON.stringify({
+            event: 'image_generation',
+            provider: provider.id,
+            modelId,
+            latencyMs: Date.now() - startedAt,
+            ok: true,
+            imageBytes: Math.floor(result.image.length * 0.75),
+        }));
+        return { image: result.image, mimeType: result.mimeType ?? 'image/png', modelId: result.modelId };
+    } catch (err) {
+        console.log('[telemetry]', JSON.stringify({
+            event: 'image_generation',
+            provider: provider.id,
+            modelId,
+            latencyMs: Date.now() - startedAt,
+            ok: false,
+            error: err instanceof Error ? err.message.slice(0, 200) : String(err),
+        }));
+        throw err;
+    }
 };
 
 export const callTextModel = async (parts: GeminiPart[], modelId: string): Promise<string> => {

@@ -7,7 +7,10 @@ import type { GeminiPart } from '../shared/generation-parts.js';
 export interface ImageModelProvider {
     id: string;
     supports: (modelId: string) => boolean;
-    generateImage: (parts: GeminiPart[], modelId: string) => Promise<{ image: string; modelId: string }>;
+    generateImage: (
+        parts: GeminiPart[],
+        modelId: string,
+    ) => Promise<{ image: string; mimeType?: string; modelId: string }>;
     generateText: (parts: GeminiPart[], modelId: string) => Promise<{ text: string; modelId: string }>;
 }
 
