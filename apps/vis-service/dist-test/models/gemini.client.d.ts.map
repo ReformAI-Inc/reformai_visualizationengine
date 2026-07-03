@@ -1,1 +1,0 @@
-{"version":3,"file":"gemini.client.d.ts","sourceRoot":"","sources":["../../src/models/gemini.client.ts"],"names":[],"mappings":"AAKA,OAAO,KAAK,EAAE,UAAU,EAAE,MAAM,+BAA+B,CAAC;AAGhE,MAAM,WAAW,YAAY;IACzB,KAAK,EAAE,MAAM,CAAC;CACjB;AAED,eAAO,MAAM,UAAU,GAAU,OAAO,UAAU,EAAE,KAAG,OAAO,CAAC,YAAY,CAG1E,CAAC"}

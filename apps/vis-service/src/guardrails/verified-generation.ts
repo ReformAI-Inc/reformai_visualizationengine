@@ -28,8 +28,10 @@ import { extractAGTFromImageData } from './extract.js';
 import { buildViolationFeedback, diffAGT, type AGTDiff } from './verify.js';
 
 const MAX_RETRIES = 1;
-// Gemini image generation returns PNG data.
-const GENERATED_IMAGE_MIME = 'image/png';
+// Fallback only — callImageModel reports the actual mime of each generated
+// image, and re-extraction must use it (a JPEG/WebP output re-extracted as
+// PNG silently degrades verification).
+const FALLBACK_IMAGE_MIME = 'image/png';
 
 export interface VerifiedGenerationResult {
     image: string;
@@ -53,14 +55,21 @@ export const generateWithVerification = async (
 
     while (true) {
         attempts++;
-        const { image } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
+        const { image, mimeType } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
 
         let diff: AGTDiff;
         try {
-            const outputAGT = await extractAGTFromImageData(image, GENERATED_IMAGE_MIME);
+            const outputAGT = await extractAGTFromImageData(image, mimeType || FALLBACK_IMAGE_MIME);
             diff = diffAGT(inputAGT, inputClassified, outputAGT);
-        } catch {
+        } catch (err) {
             // Extraction infra failure on the output image: inconclusive pass.
+            // Never silent — an unlogged inconclusive pass degrades verification
+            // to theater exactly when it is supposed to prove itself.
+            console.warn('[verify]', JSON.stringify({
+                event: 'output_extraction_failed',
+                attempts,
+                error: err instanceof Error ? err.message.slice(0, 200) : String(err),
+            }));
             return {
                 image,
                 verification: {
@@ -80,6 +89,14 @@ export const generateWithVerification = async (
 
         currentParts = [...parts, { text: buildViolationFeedback(diff.violations) }];
     }
+
+    console.log('[verify]', JSON.stringify({
+        event: 'verification_outcome',
+        attempts,
+        verified: best!.diff.violations.length === 0,
+        conclusive: best!.diff.inconclusiveFields.length === 0,
+        violationCount: best!.diff.violations.length,
+    }));
 
     return {
         image: best!.image,

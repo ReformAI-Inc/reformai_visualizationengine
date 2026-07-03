@@ -5,6 +5,7 @@ import { loadEnvFile } from 'node:process';
 import { GoogleGenAI, Modality } from '@google/genai';
 import type { GeminiPart } from '../../shared/generation-parts.js';
 import type { ImageModelProvider } from '../provider-registry.js';
+import { extractInlineImage, extractText, firstFinishReason } from './response-parsing.js';
 
 if (!process.env.K_SERVICE) {
     try {
@@ -33,13 +34,12 @@ export const geminiProvider: ImageModelProvider = {
             config: { responseModalities: [Modality.IMAGE] },
         });
 
-        const firstPart = response.candidates?.[0]?.content?.parts?.[0];
-
-        if (firstPart?.inlineData?.data) {
-            return { image: firstPart.inlineData.data, modelId };
+        const image = extractInlineImage(response);
+        if (image) {
+            return { image: image.data, mimeType: image.mimeType, modelId };
         }
 
-        const finishReason = response.candidates?.[0]?.finishReason;
+        const finishReason = firstFinishReason(response);
         throw new Error(
             `No image returned by Gemini.${finishReason ? ` Finish reason: ${finishReason}` : ' Response may have been blocked.'}`,
         );
@@ -51,7 +51,7 @@ export const geminiProvider: ImageModelProvider = {
             contents: { parts },
         });
 
-        const text = response.candidates?.[0]?.content?.parts?.[0]?.text;
+        const text = extractText(response);
         if (!text) throw new Error(`No text returned by Gemini model ${modelId}.`);
         return { text, modelId };
     },
