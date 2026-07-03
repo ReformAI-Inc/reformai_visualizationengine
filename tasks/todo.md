@@ -2,9 +2,10 @@
 
 ## Active (priority order)
 - [x] Gate fixes (F1–F3, F6-cheap): cross-mode `baseline_mode: balanced_v7`, NO_BASELINE→FAIL, min_cases_evaluated=12 + skips→exit 2, validity classifier in verdict, judge provenance check, per-case floor (max_single_case_drop 1.0), judge model to config + stamped on evals, credit preflight — gate_version 2.0. Validated $0 against June 11 runs: V8 run now FAILs (drop 0.45), invalid-evidence runs exit 2, NO_BASELINE FAILs. — 2026-07-02, fix/gate-decisiveness
-- [ ] Provider fixes (F7, F8): all-parts image scan + mimeType threading, with unit tests — models/providers/gemini.ts, guardrails/verified-generation.ts
-- [ ] Generation telemetry (F14): structured log {reqId, mode, modelId, latencyMs, attempts, verificationOutcome}; record modelId in V5/V8 debug
-- [ ] Credit preflight in gate.py; top up Anthropic credits
+- [x] Provider fixes (F7, F8): pure response-parsing module (all candidates × parts, real mimeType), threaded into verification; 23/23 contracts incl. 2 new; dist-test untracked; stale pre-monorepo package-lock regenerated — PR #9, 2026-07-02
+- [x] Generation telemetry (F14): [telemetry] line per generation (provider, modelId, latencyMs, ok, bytes/error); swallowed verification-extraction failure now logs; verification outcomes log — PR #9 (V5/V8 debug modelId deferred to profile consolidation)
+- [x] Credit preflight in gate.py — PR #8
+- [ ] **Top up Anthropic credits** (only human-blocked step)
 - [ ] `--eval-only` re-judge: V7 baseline (3 session-judged cases, 24 validity ERRORs) + V8 run; re-accept baseline with sign-off
 - [ ] Run A: NB2 vs V7, verifyAGT OFF, 3× repeats (promotion evidence)
 - [ ] Run B: NB2 verifyAGT ON vs OFF (verification evidence, backlog-10 answer)
