@@ -443,14 +443,14 @@ def _validate_classifier_result(raw_result):
     }
 
 
-def classify_output_validity(client, fixture_path, output_path):
+def classify_output_validity(client, fixture_path, output_path, judge_model="claude-opus-4-7"):
     """Call validity classifier for one source + output pair. Returns a validity dict."""
     try:
         fix_b64, fix_mime = load_image_b64(fixture_path)
         out_b64, out_mime = load_image_b64(output_path)
 
         response = client.messages.create(
-            model="claude-opus-4-7",
+            model=judge_model,
             max_tokens=400,
             messages=[{
                 "role": "user",
@@ -513,7 +513,7 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
         )
 
         response = client.messages.create(
-            model="claude-opus-4-7",
+            model=cfg.get("judge_model", "claude-opus-4-7"),
             max_tokens=1800,
             messages=[{
                 "role": "user",
@@ -542,6 +542,10 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
         weights = cfg["scoring_weights"]
         result["baseline"]["weighted_score"]    = weighted_ai_score(result["baseline"],    weights)
         result["newest_build"]["weighted_score"] = weighted_ai_score(result["newest_build"], weights)
+
+        # Judge provenance: gate.py distinguishes API-judged evaluations from
+        # hand-patched session-judged ones ("session-*") by this field.
+        result["judge"] = cfg.get("judge_model", "claude-opus-4-7")
 
         return result
 
@@ -622,7 +626,8 @@ def run_validity_classification(run_dir, manifest, cfg):
                 print(f"  {slug}:skip", end="", flush=True)
                 continue
 
-            v   = classify_output_validity(client, fixture, run_dir / img_name)
+            v   = classify_output_validity(client, fixture, run_dir / img_name,
+                                           judge_model=cfg.get("judge_model", "claude-opus-4-7"))
             sym = "P" if v["verdict"] == "PASS" else ("F" if v["verdict"] == "FAIL" else "E")
             validity[slug] = v
             print(f"  {slug}:{sym}", end="", flush=True)

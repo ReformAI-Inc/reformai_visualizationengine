@@ -1,7 +1,7 @@
 # ReformAI Visualization Engine — Todo
 
 ## Active (priority order)
-- [ ] Gate fixes (F1–F3, F6-cheap): cross-mode `--baseline-mode`, NO_BASELINE→FAIL, min_cases_evaluated=12, validity classifier in verdict, judge model to config — tests/regression/gate.py + run_regression.py + config.gate.yaml
+- [x] Gate fixes (F1–F3, F6-cheap): cross-mode `baseline_mode: balanced_v7`, NO_BASELINE→FAIL, min_cases_evaluated=12 + skips→exit 2, validity classifier in verdict, judge provenance check, per-case floor (max_single_case_drop 1.0), judge model to config + stamped on evals, credit preflight — gate_version 2.0. Validated $0 against June 11 runs: V8 run now FAILs (drop 0.45), invalid-evidence runs exit 2, NO_BASELINE FAILs. — 2026-07-02, fix/gate-decisiveness
 - [ ] Provider fixes (F7, F8): all-parts image scan + mimeType threading, with unit tests — models/providers/gemini.ts, guardrails/verified-generation.ts
 - [ ] Generation telemetry (F14): structured log {reqId, mode, modelId, latencyMs, attempts, verificationOutcome}; record modelId in V5/V8 debug
 - [ ] Credit preflight in gate.py; top up Anthropic credits

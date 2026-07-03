@@ -43,3 +43,4 @@ docs/reference-documents/AI Visualization Tool Smoke Test (1).pdf
 
 # Git backup artifacts
 **/.git_backup/
+tests/regression/config.gate.derived.yaml

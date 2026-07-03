@@ -12,15 +12,25 @@
 version: "2.0"
 created: "2026-06-11"
 
-gate_version: "1.0"
+gate_version: "2.0"   # 2.0 (2026-07-02): cross-mode baseline, NO_BASELINE=FAIL, validity wired
+                      # into the verdict, min-case enforcement, per-case floor, judge provenance,
+                      # credit preflight. Baseline lookup matches judge_version only (scores come
+                      # from the judge), so 1.0-era accepted baselines remain comparable.
 judge_version: "1.0"
+judge_model: "claude-opus-4-7"   # the API judge + validity classifier model. Changing it requires
+                                 # bumping judge_version and re-establishing baselines.
 
 api_base: "http://localhost:8080"
 
 # Gate thresholds (consumed by gate.py, not run_regression.py)
 gate:
   max_candidate_hard_rejections: 0     # any hard rejection on the candidate => FAIL
-  max_median_score_drop: 0.25          # vs last accepted baseline (same candidate+judge_version)
+  max_median_score_drop: 0.25          # vs last accepted baseline of baseline_mode (same judge_version)
+  max_single_case_drop: 1.0            # any shared case dropping more than this vs baseline => FAIL
+  min_cases_evaluated: 12              # fewer judged cases (or any skipped) => run invalid (exit 2)
+  baseline_mode: balanced_v7           # production mode every candidate is compared against.
+                                       # This is what makes gating a NEW mode (e.g. balanced_v7_nb2)
+                                       # decisive instead of an automatic NO_BASELINE pass.
 
 # Optional extra form fields posted with every generation request.
 # Uncomment to run the canonical set with post-generation AGT verification ON
