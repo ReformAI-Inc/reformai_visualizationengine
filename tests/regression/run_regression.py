@@ -18,6 +18,7 @@ import os
 import subprocess
 import sys
 import time
+import zlib
 from datetime import datetime
 
 # Ensure UTF-8 output on Windows regardless of terminal code page
@@ -120,6 +121,10 @@ def run_tests(cfg):
     styles    = cfg["styles"]
     pipes     = cfg["pipelines"]
     influence = cfg.get("style_influence", 50)
+    # Repeats: N independent generations per (room, style) per pipeline.
+    # Both models are nondeterministic; promotion decisions use per-case
+    # medians across repeats instead of single draws (config `repeats`).
+    repeats   = max(1, int(cfg.get("repeats", 1)))
 
     run_id  = datetime.now().strftime("run_%Y%m%d_%H%M%S")
     run_dir = OUTPUTS / run_id
@@ -129,10 +134,11 @@ def run_tests(cfg):
         "run_id":    run_id,
         "timestamp": datetime.now().isoformat(),
         "pipelines": pipes,
+        "repeats":   repeats,
         "cases":     [],
     }
 
-    total = len(rooms) * len(styles)
+    total = len(rooms) * len(styles) * repeats
     n     = 0
 
     for room in rooms:
@@ -142,12 +148,17 @@ def run_tests(cfg):
             continue
 
         for style in styles:
+          for rep in range(1, repeats + 1):
             n += 1
-            case_id = f"{room['id']}_{style['id']}"
-            print(f"\n[{n}/{total}] {room['label']} + {style['name']} ({style['bucket']})")
+            base_case_id = f"{room['id']}_{style['id']}"
+            case_id = base_case_id if repeats == 1 else f"{base_case_id}__r{rep}"
+            rep_note = f" [repeat {rep}/{repeats}]" if repeats > 1 else ""
+            print(f"\n[{n}/{total}] {room['label']} + {style['name']} ({style['bucket']}){rep_note}")
 
             case = {
                 "case_id":      case_id,
+                "base_case_id": base_case_id,
+                "repeat":       rep,
                 "room":         room["label"],
                 "room_type":    room["room_type"],
                 "style":        style["name"],
@@ -220,17 +231,18 @@ You are evaluating AI-generated interior design visualizations for a production 
 
 You will see three images in order:
   Image 1 — INPUT: the original room photo (the fixed architectural reference)
-  Image 2 — BASELINE: output from the baseline pipeline
-  Image 3 — NEWEST BUILD: output from the newest build pipeline
+  Image 2 — OUTPUT A: one pipeline's output
+  Image 3 — OUTPUT B: the other pipeline's output
+
+You are NOT told which pipeline produced which output, and you receive no
+pipeline metadata. Judge only what you can see.
 
 Context:
   Style: {style_name}
   Staging bucket: {bucket} ({bucket_description})
   Room type: {room_type}
-  Newest build debug metadata:
-{debug_excerpt}
 
-Score each output (BASELINE and NEWEST BUILD) independently on a 1–5 integer scale:
+Score each output (OUTPUT A and OUTPUT B) independently on a 1–5 integer scale:
 
   structural_fidelity          — fixed architectural geometry unchanged: walls, floor, ceiling,
                                  windows, doors, room proportions, camera angle, perspective
@@ -287,7 +299,7 @@ Winner logic:
 
 Return ONLY valid JSON — no markdown, no explanation outside the JSON object:
 {{
-  "baseline": {{
+  "output_a": {{
     "structural_fidelity": <int 1-5>,
     "window_exterior_preservation": <int 1-5>,
     "style_fidelity": <int 1-5>,
@@ -296,9 +308,10 @@ Return ONLY valid JSON — no markdown, no explanation outside the JSON object:
     "functional_realism": <int 1-5>,
     "design_fidelity": <int 1-5>,
     "defects_artifacts": <int 1-5>,
-    "hard_rejections": [<strings from the list above, or empty>]
+    "hard_rejections": [<strings from the list above, or empty>],
+    "notable_weakness": "<one sentence, or null>"
   }},
-  "newest_build": {{
+  "output_b": {{
     "structural_fidelity": <int 1-5>,
     "window_exterior_preservation": <int 1-5>,
     "style_fidelity": <int 1-5>,
@@ -307,14 +320,49 @@ Return ONLY valid JSON — no markdown, no explanation outside the JSON object:
     "functional_realism": <int 1-5>,
     "design_fidelity": <int 1-5>,
     "defects_artifacts": <int 1-5>,
-    "hard_rejections": [<strings from the list above, or empty>]
+    "hard_rejections": [<strings from the list above, or empty>],
+    "notable_weakness": "<one sentence, or null>"
   }},
-  "winner": "<Baseline|Newest Build|Tie / subjective|Neither>",
-  "rationale": "<one sentence explaining the winner decision>",
-  "key_regression": "<one sentence describing the most significant regression in newest build, or null>",
-  "key_improvement": "<one sentence describing the most significant improvement in newest build, or null>",
-  "prompt_config_note": "<observation from debug metadata relevant to the result, or null>"
+  "winner": "<Output A|Output B|Tie / subjective|Neither>",
+  "rationale": "<one sentence explaining the winner decision>"
 }}"""
+
+
+# ── judge blinding (judge_version 2.0) ─────────────────────────────────────────
+# The judge sees anonymous OUTPUT A / OUTPUT B with no pipeline metadata.
+# Assignment is deterministic per case_id (reproducible across --eval-only
+# re-runs) and roughly 50/50 across a case set, so position bias cancels.
+
+def presentation_swap(case_id):
+    """True → OUTPUT A = newest_build, OUTPUT B = baseline. Deterministic."""
+    return (zlib.crc32(case_id.encode("utf-8")) % 2) == 1
+
+
+def remap_blinded_result(parsed, swap):
+    """Map an A/B-keyed judge result back to baseline/newest_build keys."""
+    a, b = parsed.get("output_a"), parsed.get("output_b")
+    if not isinstance(a, dict) or not isinstance(b, dict):
+        raise ValueError("judge result missing output_a/output_b objects")
+    baseline_r, newest_r = (b, a) if swap else (a, b)
+    winner_raw = str(parsed.get("winner", ""))
+    winner_map = {
+        "Output A": "Newest Build" if swap else "Baseline",
+        "Output B": "Baseline" if swap else "Newest Build",
+    }
+    result = {
+        "baseline": baseline_r,
+        "newest_build": newest_r,
+        "winner": winner_map.get(winner_raw, winner_raw),  # Tie / Neither pass through
+        "rationale": parsed.get("rationale"),
+        # Populated for report compatibility; the blinded judge cannot know
+        # which output is "newest", so these derive from per-output notes.
+        "key_regression": newest_r.pop("notable_weakness", None),
+        "key_improvement": None,
+        "prompt_config_note": None,
+        "presentation": {"output_a": "newest_build" if swap else "baseline"},
+    }
+    baseline_r.pop("notable_weakness", None)
+    return result
 
 # ── validity classifier ────────────────────────────────────────────────────────
 
@@ -501,15 +549,17 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
         ba_b64,  ba_mime  = load_image_b64(run_dir / img_a)
         nb_b64,  nb_mime  = load_image_b64(run_dir / img_b)
 
-        debug_raw  = json.dumps(case["results"].get(slug_b, {}).get("debug", {}), indent=2)
-        debug_excerpt = debug_raw[:2500] + ("\n... (truncated)" if len(debug_raw) > 2500 else "")
+        # Blinded presentation (judge_version 2.0): deterministic per-case
+        # position assignment; no pipeline identity or debug metadata is sent.
+        swap = presentation_swap(case["case_id"])
+        first_b64, first_mime = (nb_b64, nb_mime) if swap else (ba_b64, ba_mime)
+        second_b64, second_mime = (ba_b64, ba_mime) if swap else (nb_b64, nb_mime)
 
         prompt = EVAL_PROMPT.format(
             style_name=case["style"],
             bucket=case["bucket"],
             bucket_description=BUCKET_DESCRIPTIONS.get(case["bucket"], ""),
             room_type=case["room"],
-            debug_excerpt=debug_excerpt,
         )
 
         response = client.messages.create(
@@ -520,10 +570,10 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
                 "content": [
                     {"type": "text",  "text": "Image 1 — INPUT (original room photo):"},
                     {"type": "image", "source": {"type": "base64", "media_type": fix_mime, "data": fix_b64}},
-                    {"type": "text",  "text": "Image 2 — BASELINE output:"},
-                    {"type": "image", "source": {"type": "base64", "media_type": ba_mime,  "data": ba_b64}},
-                    {"type": "text",  "text": "Image 3 — NEWEST BUILD output:"},
-                    {"type": "image", "source": {"type": "base64", "media_type": nb_mime,  "data": nb_b64}},
+                    {"type": "text",  "text": "Image 2 — OUTPUT A:"},
+                    {"type": "image", "source": {"type": "base64", "media_type": first_mime,  "data": first_b64}},
+                    {"type": "text",  "text": "Image 3 — OUTPUT B:"},
+                    {"type": "image", "source": {"type": "base64", "media_type": second_mime, "data": second_b64}},
                     {"type": "text",  "text": prompt},
                 ],
             }],
@@ -536,7 +586,7 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
             if raw.startswith("json"):
                 raw = raw[4:]
 
-        result = json.loads(raw.strip())
+        result = remap_blinded_result(json.loads(raw.strip()), swap)
 
         # Attach pre-computed weighted scores
         weights = cfg["scoring_weights"]

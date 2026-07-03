@@ -35,6 +35,7 @@ Exit code: 0 = PASS, 1 = FAIL, 2 = usage/config/infra error.
 import argparse
 import json
 import os
+import re
 import statistics
 import subprocess
 import sys
@@ -129,6 +130,9 @@ def candidate_stats(manifest):
         validity = (case.get("validity") or {}).get(candidate_slug)
         cases.append({
             "case_id": case["case_id"],
+            # Repeats (run_regression `repeats: N`) share a base_case_id;
+            # older manifests have neither field nor __rN suffix.
+            "base_case_id": case.get("base_case_id") or re.sub(r"__r\d+$", "", case["case_id"]),
             "weighted_score": cand["weighted_score"],
             "hard_rejections": cand.get("hard_rejections") or [],
             # absent judge field = legacy API-judged manifest (pre-provenance stamping);
@@ -211,14 +215,19 @@ def main():
 
     cases, skipped = candidate_stats(manifest)
 
+    # Group repeats by base case (older manifests: one repeat per base case).
+    by_base = {}
+    for c in cases:
+        by_base.setdefault(c["base_case_id"], []).append(c)
+
     # ── Infra validity: a run whose evidence is incomplete gets NO verdict (exit 2) ──
     infra_problems = []
     if skipped:
         infra_problems.append(
             f"{len(skipped)} case(s) skipped (unjudged/unparseable): {', '.join(skipped)} — "
             f"rerun judging with --eval-only, then re-gate")
-    if min_cases and len(cases) < min_cases:
-        infra_problems.append(f"only {len(cases)} evaluated cases; gate requires {min_cases}")
+    if min_cases and len(by_base) < min_cases:
+        infra_problems.append(f"only {len(by_base)} evaluated base cases; gate requires {min_cases}")
 
     session_judged = sorted({c["judge"] for c in cases if c["judge"] and str(c["judge"]).startswith("session-")})
     if session_judged and not args.allow_session_judge:
@@ -245,7 +254,16 @@ def main():
         sys.exit(2)
 
     # ── Quality verdict ──
-    scores = [c["weighted_score"] for c in cases]
+    # Aggregate repeats: per base case, the score is the MEDIAN across its
+    # repeats (single draws are too noisy against a 0.25 threshold). Hard
+    # rejections and validity FAILs on ANY repeat count — a structural
+    # violation 1-in-N times is a real defect rate, not noise.
+    per_case_scores = {
+        base: statistics.median([c["weighted_score"] for c in group])
+        for base, group in by_base.items()
+    }
+    repeats = max(len(g) for g in by_base.values())
+    scores = list(per_case_scores.values())
     median_score = statistics.median(scores)
     rejected = [c for c in cases if c["hard_rejections"]]
     validity_failed = [c for c in cases if c["validity_verdict"] == "FAIL"]
@@ -267,11 +285,11 @@ def main():
             )
         if max_case_drop is not None:
             base_per_case = baseline.get("per_case") or {}
-            for c in cases:
-                base_score = base_per_case.get(c["case_id"])
-                if base_score is not None and (base_score - c["weighted_score"]) > float(max_case_drop):
+            for base_id, case_score in per_case_scores.items():
+                base_score = base_per_case.get(base_id)
+                if base_score is not None and (base_score - case_score) > float(max_case_drop):
                     failures.append(
-                        f"single-case drop on {c['case_id']}: {c['weighted_score']:.2f} vs baseline "
+                        f"single-case drop on {base_id}: {case_score:.2f} vs baseline "
                         f"{base_score:.2f} (limit {float(max_case_drop):.2f})")
     elif not args.allow_no_baseline:
         failures.append(
@@ -291,14 +309,15 @@ def main():
         "judge_version": judge_version,
         "judge_model": judge_model,
         "gate_version": gate_version,
-        "cases_evaluated": len(cases),
+        "cases_evaluated": len(by_base),
+        "repeats": repeats,
         "cases_skipped": skipped,
         "hard_rejection_count": len(rejected),
         "validity_fail_count": len(validity_failed),
         "session_judged": session_judged,
         "median_score": round(median_score, 3),
         "mean_score": round(statistics.mean(scores), 3),
-        "per_case": {c["case_id"]: c["weighted_score"] for c in cases},
+        "per_case": {base: round(score, 4) for base, score in per_case_scores.items()},
         "baseline_run_id": baseline["run_id"] if baseline else None,
         "verdict": verdict,
         "accepted_baseline": bool(args.set_baseline and verdict == "PASS"),
@@ -310,8 +329,8 @@ def main():
             f.write(json.dumps(entry) + "\n")
 
     print(f"\n=== GATE {verdict} === candidate={candidate_mode} run={entry['run_id']}")
-    print(f"cases={len(cases)} hard_rejections={len(rejected)} validity_fails={len(validity_failed)} "
-          f"median={median_score:.2f} mean={entry['mean_score']:.2f}")
+    print(f"cases={len(by_base)} (x{repeats} repeats) hard_rejections={len(rejected)} "
+          f"validity_fails={len(validity_failed)} median={median_score:.2f} mean={entry['mean_score']:.2f}")
     if baseline:
         print(f"baseline: {baseline_mode} median {baseline['median_score']:.2f} from {baseline['run_id']}")
     if session_judged:
