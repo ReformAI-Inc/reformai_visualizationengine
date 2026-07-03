@@ -16,9 +16,19 @@ gate_version: "2.0"   # 2.0 (2026-07-02): cross-mode baseline, NO_BASELINE=FAIL,
                       # into the verdict, min-case enforcement, per-case floor, judge provenance,
                       # credit preflight. Baseline lookup matches judge_version only (scores come
                       # from the judge), so 1.0-era accepted baselines remain comparable.
-judge_version: "1.0"
+judge_version: "2.0"  # 2.0 (2026-07-03): blinded judging — outputs presented as anonymous
+                      # OUTPUT A/B (deterministic per-case position assignment), candidate
+                      # debug/AGT metadata removed from the judge payload. 1.0-era scores are
+                      # NOT comparable; baselines must be re-established under 2.0 (the V7
+                      # baseline re-judge required by the session-judging contamination does
+                      # this anyway — that is why the bump lands now).
 judge_model: "claude-opus-4-7"   # the API judge + validity classifier model. Changing it requires
                                  # bumping judge_version and re-establishing baselines.
+
+# Independent generations per (room, style) per pipeline. Both the image model
+# and the judge are nondeterministic; the gate scores each base case as the
+# MEDIAN across its repeats. Promotion runs use 3; set to 1 for cheap smoke runs.
+repeats: 3
 
 api_base: "http://localhost:8080"
 

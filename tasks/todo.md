@@ -5,7 +5,10 @@
 - [x] Provider fixes (F7, F8): pure response-parsing module (all candidates × parts, real mimeType), threaded into verification; 23/23 contracts incl. 2 new; dist-test untracked; stale pre-monorepo package-lock regenerated — PR #9, 2026-07-02
 - [x] Generation telemetry (F14): [telemetry] line per generation (provider, modelId, latencyMs, ok, bytes/error); swallowed verification-extraction failure now logs; verification outcomes log — PR #9 (V5/V8 debug modelId deferred to profile consolidation)
 - [x] Credit preflight in gate.py — PR #8
+- [x] Test-strategy hardening (pre-paid-runs): repeats support (config `repeats: 3`, per-case median aggregation, any-repeat rejection counts), blinded judging (judge_version 2.0 — anonymous OUTPUT A/B, deterministic position swap, no candidate metadata; 1.0 baselines orphaned by design), AGT extractor accuracy tool (`npm run check:extractor` + human-labeled fixtures/agt_labels.json — labels by Claude visual inspection, Chuck review recommended) — 2026-07-03
 - [ ] **Top up Anthropic credits** (only human-blocked step)
+- [ ] Run `npm run check:extractor` (F9 baseline for gemini-2.5-flash) once credits/keys confirmed — must precede Run B interpretation
+- [ ] Review fixtures/agt_labels.json labels (Chuck — 10 minutes)
 - [ ] `--eval-only` re-judge: V7 baseline (3 session-judged cases, 24 validity ERRORs) + V8 run; re-accept baseline with sign-off
 - [ ] Run A: NB2 vs V7, verifyAGT OFF, 3× repeats (promotion evidence)
 - [ ] Run B: NB2 verifyAGT ON vs OFF (verification evidence, backlog-10 answer)

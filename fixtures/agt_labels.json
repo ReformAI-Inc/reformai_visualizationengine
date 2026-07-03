@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "description": "Human-reference AGT ground truth for the regression fixtures. Consumed by apps/vis-service/src/tools/agt-extractor-check.ts to measure extractor accuracy (V7 spec Rev1 §11 targets: hard-fact precision >=90%, false-hard-fact rate <=5%).",
+    "labeled": "2026-07-03",
+    "labeler": "Claude (direct visual inspection of fixtures); review by Chuck recommended before treating as final ground truth",
+    "conventions": "window_count counts distinct window OPENINGS (a multi-pane unit in one opening = 1); door_count counts visible door leaves/doorways (cabinetry panels, appliance fronts, and stair openings are NOT doors); 'acceptable' lists defensible alternative counts for genuinely ambiguous scenes — an extraction matching any acceptable value is correct; camera_perspective is advisory-only in AGT (never hard) and scored separately."
+  },
+  "bathroom.png": {
+    "room_type": "bathroom",
+    "window_count": { "value": 0, "acceptable": [0] },
+    "door_count": { "value": 1, "acceptable": [0, 1] },
+    "has_ceiling_fixture": true,
+    "has_built_in_niches": false,
+    "camera_perspective": { "value": "angled", "acceptable": ["angled", "corner"] },
+    "notes": "Windowless interior bathroom. Door leaf only partially visible at right frame edge (hence acceptable 0). Recessed light + vent fan + surface light on ceiling."
+  },
+  "kitchen2.jpg": {
+    "room_type": "kitchen",
+    "window_count": { "value": 1, "acceptable": [1, 2] },
+    "door_count": { "value": 1, "acceptable": [1, 2] },
+    "has_ceiling_fixture": true,
+    "has_built_in_niches": false,
+    "camera_perspective": { "value": "straight_on", "acceptable": ["straight_on", "angled"] },
+    "notes": "One large black-framed multi-pane window unit over the sink (right wall) — arguably two sections, hence acceptable 2. One open black door (left); the doorway it reveals could be counted separately. Two rattan pendants. Open shelf is not a niche."
+  },
+  "livingroom.jpg": {
+    "room_type": "living_room",
+    "window_count": { "value": 1, "acceptable": [1] },
+    "door_count": { "value": 0, "acceptable": [0] },
+    "has_ceiling_fixture": true,
+    "has_built_in_niches": true,
+    "camera_perspective": { "value": "straight_on", "acceptable": ["straight_on"] },
+    "notes": "One curtained window (right, mostly blown out by exposure). Built-in bench niches flank the fireplace on both sides. Capiz chandelier; coffered ceiling."
+  },
+  "bedroom2.png": {
+    "room_type": "bedroom",
+    "window_count": { "value": 1, "acceptable": [1] },
+    "door_count": { "value": 1, "acceptable": [1, 2] },
+    "has_ceiling_fixture": true,
+    "has_built_in_niches": false,
+    "camera_perspective": { "value": "corner", "acceptable": ["corner", "angled"] },
+    "notes": "One large curtained picture window (multi-pane, one opening). Open white door at left (a second door/closet edge may be visible at the far left, hence acceptable 2). Flush-mount dome ceiling light."
+  },
+  "bedroom.jpeg": {
+    "room_type": "bedroom",
+    "window_count": { "value": 1, "acceptable": [1, 2, 3] },
+    "door_count": { "value": 0, "acceptable": [0] },
+    "has_ceiling_fixture": false,
+    "has_built_in_niches": false,
+    "camera_perspective": { "value": "straight_on", "acceptable": ["straight_on"] },
+    "notes": "Empty room. One wide window wall unit: large central pane flanked by narrow grid side-lites — defensibly 1, 2, or 3 openings. No ceiling fixture visible. Barred exterior view of neighboring building."
+  },
+  "kitchen.png": {
+    "room_type": "kitchen",
+    "window_count": { "value": 0, "acceptable": [0] },
+    "door_count": { "value": 0, "acceptable": [0] },
+    "has_ceiling_fixture": true,
+    "has_built_in_niches": false,
+    "camera_perspective": { "value": "straight_on", "acceptable": ["straight_on"] },
+    "notes": "All-white minimalist kitchen, no windows or doors in frame. Panel-front fridge and wall ovens are cabinetry/appliances, NOT doors — a known extractor trap. Recessed ceiling spots."
+  }
+}

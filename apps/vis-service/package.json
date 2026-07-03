@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "check:extractor": "tsx src/tools/agt-extractor-check.ts",
     "start": "node dist/index.js",
     "test": "tsx --test src/**/*.test.ts",
     "build:contracts": "tsc -p tsconfig.contract-tests.json",
