@@ -10,6 +10,11 @@ Usage:
     python run_regression.py --skip-ai               # run tests, skip AI eval
     python run_regression.py --report-only <run_dir> # regenerate report from manifest
     python run_regression.py --eval-only  <run_dir>  # re-run AI eval on existing outputs
+    python run_regression.py --resume     <run_dir>  # surgical repair: regenerate failed
+                                                     # generations, judge only unjudged cases,
+                                                     # classify only missing/ERROR validity.
+                                                     # Set REGRESSION_CONFIG to the run's config
+                                                     # (e.g. config.gate.derived.yaml for gate runs).
 """
 
 import base64
@@ -438,11 +443,30 @@ Return ONLY valid JSON — no markdown, no explanation outside the JSON:
 """
 
 
+def sniff_image_mime(data, fallback="image/png"):
+    """Detect actual image type from magic bytes — NEVER trust file extensions.
+
+    Different image models return different encodings (gemini-2.5-flash-image
+    returned PNG; gemini-3.1-flash-image returns JPEG) while the harness saves
+    every output under a .png name. Extension-derived mime made the Anthropic
+    judge reject every NB2 image with a media-type mismatch (Run A, 2026-07-03).
+    """
+    if data[:3] == b"\xff\xd8\xff":
+        return "image/jpeg"
+    if data[:8] == b"\x89PNG\r\n\x1a\n":
+        return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    if data[:6] in (b"GIF87a", b"GIF89a"):
+        return "image/gif"
+    return fallback
+
+
 def load_image_b64(path):
     with open(path, "rb") as f:
         data = f.read()
     ext  = Path(path).suffix.lower()
-    mime = "image/jpeg" if ext in (".jpg", ".jpeg") else "image/png"
+    mime = sniff_image_mime(data, fallback="image/jpeg" if ext in (".jpg", ".jpeg") else "image/png")
     return base64.standard_b64encode(data).decode("utf-8"), mime
 
 
@@ -604,7 +628,7 @@ def evaluate_case_with_ai(client, fixture_path, run_dir, case, cfg):
         return None
 
 
-def run_ai_evaluation(run_dir, manifest, cfg):
+def run_ai_evaluation(run_dir, manifest, cfg, only_missing=False):
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         print("\n[ERROR] Missing ANTHROPIC_API_KEY environment variable.")
@@ -621,11 +645,14 @@ def run_ai_evaluation(run_dir, manifest, cfg):
         return manifest
 
     total = len(manifest["cases"])
-    print(f"\nRunning AI evaluation ({total} cases)...")
+    print(f"\nRunning AI evaluation ({total} cases{', unjudged only' if only_missing else ''})...")
 
     for i, case in enumerate(manifest["cases"]):
         cid     = case["case_id"]
         fixture = FIXTURES / case["fixture"]
+        if only_missing and case.get("ai_evaluation"):
+            print(f"  [{i+1}/{total}] {case['room']} + {case['style']}... kept")
+            continue
         print(f"  [{i+1}/{total}] {case['room']} + {case['style']}...", end="", flush=True)
 
         result = evaluate_case_with_ai(client, fixture, run_dir, case, cfg)
@@ -637,8 +664,11 @@ def run_ai_evaluation(run_dir, manifest, cfg):
     return manifest
 
 
-def run_validity_classification(run_dir, manifest, cfg):
-    """Classify every generated output for validity. Saves results to manifest."""
+def run_validity_classification(run_dir, manifest, cfg, only_missing=False):
+    """Classify every generated output for validity. Saves results to manifest.
+
+    only_missing=True re-runs only slugs whose verdict is absent or ERROR,
+    preserving completed PASS/FAIL classifications (used by --resume)."""
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         print("\n[ERROR] Missing ANTHROPIC_API_KEY environment variable.")
@@ -660,9 +690,13 @@ def run_validity_classification(run_dir, manifest, cfg):
         fixture = FIXTURES / case["fixture"]
         print(f"  [{i+1}/{total}] {case['room']} + {case['style']}", end="", flush=True)
 
-        validity = {}
+        validity = dict(case.get("validity") or {})
         for pipe in pipes:
             slug     = pipe["slug"]
+            existing = validity.get(slug)
+            if only_missing and isinstance(existing, dict) and existing.get("verdict") in ("PASS", "FAIL"):
+                print(f"  {slug}:kept", end="", flush=True)
+                continue
             res_info = case["results"].get(slug, {})
             img_name = res_info.get("image")
 
@@ -1894,6 +1928,58 @@ def main():
         manifest = json.loads((run_dir / "manifest.json").read_text())
         manifest = run_ai_evaluation(run_dir, manifest, cfg)
         manifest = run_validity_classification(run_dir, manifest, cfg)
+        apply_validity_to_winners(run_dir, manifest, cfg)
+        generate_report(run_dir, manifest, cfg)
+        return
+
+    if len(sys.argv) >= 3 and sys.argv[1] == "--resume":
+        # Surgical repair of an interrupted/partially-failed run: regenerate
+        # failed generations, judge only unjudged cases, classify only
+        # missing/ERROR validity. Evidence stays API-produced end to end.
+        run_dir  = Path(sys.argv[2])
+        manifest = json.loads((run_dir / "manifest.json").read_text())
+        pipes    = manifest["pipelines"]
+        influence = cfg.get("style_influence", 50)
+        styles_by_name = {s["name"]: s for s in cfg.get("styles", [])}
+
+        broken = [(case, pipe) for case in manifest["cases"] for pipe in pipes
+                  if case["results"].get(pipe["slug"], {}).get("status") != "ok"]
+        proc = None
+        try:
+            if broken:
+                proc = start_backend(cfg["api_base"])
+                base = resolve_api_base(cfg.get("api_base"))
+                print(f"Resume: regenerating {len(broken)} failed generation(s)...")
+                for case, pipe in broken:
+                    slug  = pipe["slug"]
+                    style = styles_by_name.get(case["style"],
+                                               {"id": case["style"].lower(), "name": case["style"]})
+                    fixture = FIXTURES / case["fixture"]
+                    out = run_dir / f"{case['case_id']}_{slug}.png"
+                    dbg = run_dir / f"{case['case_id']}_{slug}_debug.json"
+                    print(f"  → {case['case_id']} [{slug}] ({pipe['mode']})...", end="", flush=True)
+                    try:
+                        r = call_pipeline(base, fixture, case["room_type"], style, pipe["mode"],
+                                          influence, extra_fields=cfg.get("request_fields"))
+                        out.write_bytes(base64.b64decode(r["data"]["image"]))
+                        dbg.write_text(json.dumps(r["data"].get("debug", {}), indent=2))
+                        case["results"][slug] = {"image": out.name,
+                                                 "debug": r["data"].get("debug", {}),
+                                                 "status": "ok"}
+                        print(" ✓")
+                    except Exception as e:
+                        case["results"][slug] = {"status": "error", "error": str(e)}
+                        print(f" ✗  {e}")
+                (run_dir / "manifest.json").write_text(json.dumps(manifest, indent=2))
+            else:
+                print("Resume: no failed generations — proceeding to evaluation repair.")
+        finally:
+            if proc:
+                proc.terminate()
+                print("Backend stopped.")
+
+        manifest = run_ai_evaluation(run_dir, manifest, cfg, only_missing=True)
+        manifest = run_validity_classification(run_dir, manifest, cfg, only_missing=True)
         apply_validity_to_winners(run_dir, manifest, cfg)
         generate_report(run_dir, manifest, cfg)
         return
