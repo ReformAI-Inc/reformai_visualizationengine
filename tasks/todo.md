@@ -6,9 +6,11 @@
 - [x] Generation telemetry (F14): [telemetry] line per generation (provider, modelId, latencyMs, ok, bytes/error); swallowed verification-extraction failure now logs; verification outcomes log — PR #9 (V5/V8 debug modelId deferred to profile consolidation)
 - [x] Credit preflight in gate.py — PR #8
 - [x] Test-strategy hardening (pre-paid-runs): repeats support (config `repeats: 3`, per-case median aggregation, any-repeat rejection counts), blinded judging (judge_version 2.0 — anonymous OUTPUT A/B, deterministic position swap, no candidate metadata; 1.0 baselines orphaned by design), AGT extractor accuracy tool (`npm run check:extractor` + human-labeled fixtures/agt_labels.json — labels by Claude visual inspection, Chuck review recommended) — 2026-07-03
-- [ ] **Top up Anthropic credits** (only human-blocked step)
-- [ ] Run `npm run check:extractor` (F9 baseline for gemini-2.5-flash) once credits/keys confirmed — must precede Run B interpretation
+- [x] Credits topped up; **all paid runs executed 2026-07-02/03**: V7 baseline PASS median 4.15 (judge 2.0, 3× repeats, accepted); extractor baseline 100% hard-fact precision; **RUN A PASS — NB2 4.38 vs 4.15 (+0.23), 0 rejections**; **RUN B PASS — NB2+verify 4.40; verification caught+fixed 2/36 first-attempt structural violations**. Mid-run fixes shipped: gate dotenv preflight (PR #14), magic-byte mime sniffing + --resume repair mode (PR #15 — NB2 returns JPEG, old model PNG).
+- [ ] **CHUCK SIGN-OFF: flip DEFAULT_IMAGE_MODEL → gemini-3.1-flash-image** (two-key promotion; gate evidence run_20260702_225242 + _232200)
+- [ ] On sign-off: make DEFAULT_IMAGE_MODEL env-overridable + flip; decide verifyAGT production default (recommend ON — 5.6% first-attempt drift repaired); delete balanced_v7_nb2 mode after flip
 - [ ] Review fixtures/agt_labels.json labels (Chuck — 10 minutes)
+- [ ] NB2-returns-JPEG: re-check downstream PNG assumptions at production cutover (vis-service internal path fixed PR #9)
 - [ ] `--eval-only` re-judge: V7 baseline (3 session-judged cases, 24 validity ERRORs) + V8 run; re-accept baseline with sign-off
 - [ ] Run A: NB2 vs V7, verifyAGT OFF, 3× repeats (promotion evidence)
 - [ ] Run B: NB2 verifyAGT ON vs OFF (verification evidence, backlog-10 answer)
