@@ -1,4 +1,0 @@
-export declare const INJECTED_ITEMS_BLOCK_VERSION = "injected-items@1.0";
-export declare const INJECTED_ITEM_BLOCK_HEADER: string;
-export declare const INJECTED_ITEM_AUDIT_TEXT = "\n5. Injected Item Identity:\n   - Is the injected item present in the output?\n   - Does the item's color, material, and silhouette match its reference image?\n   - Has the item been restyled, substituted, or omitted?\n   - If any failure \u2192 correct before generating.\n   Note: an injected item that conflicts with the active style is not a style fidelity failure.\n   It is intentional. Tier 2 takes precedence over Tier 4.";
-//# sourceMappingURL=injected-items.d.ts.map
