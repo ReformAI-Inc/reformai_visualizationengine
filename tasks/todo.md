@@ -10,7 +10,7 @@
 - [ ] Run A: NB2 vs V7, verifyAGT OFF, 3× repeats (promotion evidence)
 - [ ] Run B: NB2 verifyAGT ON vs OFF (verification evidence, backlog-10 answer)
 - [ ] On Run A PASS: make DEFAULT_IMAGE_MODEL env-overridable + flip to gemini-3.1-flash-image (models/image-model.client.ts:10)
-- [ ] Backlog 14: archive legacy pipelines/prompts (hard-dated before Oct 2; fix config.full_matrix.yaml refs first)
+- [x] Backlog 14: legacy V1–V4.1 + improved archived to archive/legacy-pipelines/ (schema/type/routing/dispatcher now 6 modes, was 14); full_matrix.yaml fixed; sandbox picker trimmed + balanced_v7_nb2 option added; web-sandbox/dist untracked; contracts 23/23 — PR #11, 2026-07-02. Deferred: unused density-block entries (V5-imported registry; needs gate run). Note: baseline_original anchor itself dies at Oct 2 EOL — gate needs a re-frozen anchor before then (documented in pipelines/archived/README.md)
 - [ ] Label 6 fixtures + AGT extractor accuracy check (F9) for current + successor extraction model
 
 ## Then
