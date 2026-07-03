@@ -1,34 +1,27 @@
 # Archived Pipelines
 
-Pipelines V1 through V4.1, baseline_original, and improved_current are frozen regression anchors.
+**Updated 2026-07-02:** Legacy pipelines V1–V4.1 and `improved_current` have been
+**physically moved** to repo-root `archive/legacy-pipelines/` and their mode keys
+removed from the request schema, routing, and dispatcher. They all hardcoded
+`gemini-2.5-flash-image` (shutdown 2026-10-02) with their own SDK clients, so they
+would have stopped working at model EOL regardless. Historical run outputs under
+`runs/` remain the visual record of their behavior.
 
-## Physical location
-
-These pipelines are **not physically moved** to this directory. Their implementations remain in `services/<version>/geminiService.ts` with their original relative import paths intact. Moving them would require updating their internal imports, which would introduce change risk for code that exists solely for regression comparison.
-
-Their presence in `services/` is intentional. After Phase 4 of the refactor, `services/` contains only archived pipeline implementations.
-
-## Mode keys and handlers
+## Remaining live modes
 
 | Mode key | Handler location | Status |
 |---|---|---|
-| `baseline_original` | `services/baseline/geminiService.ts` | Frozen — original comparison anchor |
-| `balanced_v1` | `services/balanced/geminiService.ts` | Frozen benchmark |
-| `balanced_v2` | `services/balanced_v2/geminiService.ts` | Frozen benchmark |
-| `balanced_v2_1` | `services/balanced_v2_1/geminiService.ts` | Frozen benchmark |
-| `balanced_v2_2` | `services/balanced_v2_2/geminiService.ts` | Frozen benchmark |
-| `balanced_v3_0` | `services/balanced_v3_0/geminiService.ts` | Frozen benchmark |
-| `balanced_v4_0` | `services/balanced_v4_0/geminiService.ts` | Frozen benchmark |
-| `balanced_v4_1` | `services/balanced_v4_1/geminiService.ts` | Frozen benchmark |
-| `improved_current` | `services/improved/geminiService.ts` | Frozen experimental |
+| `baseline_original` | `pipelines/legacy-services/baseline/geminiService.ts` | Frozen — the regression gate's fixed visual anchor. Do not modify. Dies at model EOL (2026-10-02); the gate must move to a re-pointed or re-frozen anchor before then. |
+| `balanced_v5` | `pipelines/versions/balanced-v5/index.ts` | Frozen baseline; also serves the `balanced_v6` alias (catalogue flows) |
+| `balanced_v6` | alias → `balanced_v5` (`pipeline-routing.ts` HANDLER_ALIASES) | Explicit alias |
+| `balanced_v7` | `pipelines/versions/balanced-v7/index.ts` | Canonical production pipeline |
+| `balanced_v7_nb2` | `balanced-v7/index.ts` (`generateVisualizationNB2`) | Temporary migration A/B vehicle — delete after the NB2 default flip |
+| `balanced_v8` | `pipelines/versions/balanced-v8/index.ts` | Demoted; absorbed into the V9 `product_install` profile per `docs/ENGINE_BLUEPRINT.md` §8, then deleted |
 
 ## Rules
 
-- Do not modify any file in `services/<version>/` for any of the above modes.
-- Do not add new features to these pipelines.
-- Do not update their imports or refactor their internals.
-- They remain callable via the dispatcher for regression comparison only.
-
-## Running regressions against archived pipelines
-
-Use `tests/regression/run_regression.py` with `config.yaml` to include any of these modes in a regression run.
+- Do not modify `legacy-services/baseline/` — it is the gate's ruler.
+- Archived pipeline code in `archive/legacy-pipelines/` is reference-only and
+  outside the TypeScript build; it is not importable and must never come back.
+- New behavior is never a new version fork — see `docs/ENGINE_BLUEPRINT.md`
+  (Task Profiles, §8; "never build again" list, §12).

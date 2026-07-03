@@ -45,3 +45,4 @@ docs/reference-documents/AI Visualization Tool Smoke Test (1).pdf
 **/.git_backup/
 tests/regression/config.gate.derived.yaml
 apps/vis-service/dist-test/
+apps/web-sandbox/dist/

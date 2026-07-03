@@ -234,73 +234,64 @@ const outputAGT = (overrides: Partial<ArchitecturalGroundTruth>): ArchitecturalG
 
 // ── Dispatcher contracts ──────────────────────────────────────────────────────
 
-{
-    let calledWith: PipelineMode | null = null;
-    const fakeHandlers = Object.fromEntries(
-        ['baseline_original','balanced_v1','balanced_v2','balanced_v2_1','balanced_v2_2',
-         'balanced_v3_0','balanced_v4_0','balanced_v4_1','balanced_v5','balanced_v6',
-         'balanced_v7','improved_current'].map(k => [
+// All live modes post-archive (2026-07-02): legacy balanced_v1..v4_1 and
+// improved_current moved to archive/legacy-pipelines/.
+const ALL_MODES: PipelineMode[] = [
+    'baseline_original', 'balanced_v5', 'balanced_v6',
+    'balanced_v7', 'balanced_v7_nb2', 'balanced_v8',
+];
+
+const makeFakeHandlers = (record: (mode: PipelineMode) => void) =>
+    Object.fromEntries(
+        ALL_MODES.map(k => [
             k,
-            async (p: GenerateVisualizationParams) => {
-                calledWith = k as PipelineMode;
-                return { image: '', debug: {} };
-            },
-        ])
+            async () => { record(k); return { image: '', debug: {} }; },
+        ]),
     ) as Record<PipelineMode, any>;
 
-    await dispatchWithHandlers({ ...baseRequest, pipelineMode: 'balanced_v4_1' }, fakeHandlers);
-    assert.equal(calledWith, 'balanced_v4_1', 'dispatcher routes explicit mode to expected handler');
+{
+    let calledWith: PipelineMode | null = null;
+    await dispatchWithHandlers(
+        { ...baseRequest, pipelineMode: 'balanced_v8' },
+        makeFakeHandlers(m => { calledWith = m; }),
+    );
+    assert.equal(calledWith, 'balanced_v8', 'dispatcher routes explicit mode to expected handler');
     pass('dispatcher routes explicit mode to expected handler');
 }
 
 {
     let calledWith: PipelineMode | null = null;
-    const fakeHandlers = Object.fromEntries(
-        ['baseline_original','balanced_v1','balanced_v2','balanced_v2_1','balanced_v2_2',
-         'balanced_v3_0','balanced_v4_0','balanced_v4_1','balanced_v5','balanced_v6',
-         'balanced_v7','improved_current'].map(k => [
-            k,
-            async () => { calledWith = k as PipelineMode; return { image: '', debug: {} }; },
-        ])
-    ) as Record<PipelineMode, any>;
-
-    await dispatchWithHandlers({ ...baseRequest, pipelineMode: undefined }, fakeHandlers);
+    await dispatchWithHandlers(
+        { ...baseRequest, pipelineMode: undefined },
+        makeFakeHandlers(m => { calledWith = m; }),
+    );
     assert.equal(calledWith, 'balanced_v7', 'dispatcher uses balanced_v7 when mode omitted');
     pass('dispatcher uses balanced_v7 when mode omitted');
 }
 
 {
     let calledWith: PipelineMode | null = null;
-    const fakeHandlers = Object.fromEntries(
-        ['baseline_original','balanced_v1','balanced_v2','balanced_v2_1','balanced_v2_2',
-         'balanced_v3_0','balanced_v4_0','balanced_v4_1','balanced_v5','balanced_v6',
-         'balanced_v7','improved_current'].map(k => [
-            k,
-            async () => { calledWith = k as PipelineMode; return { image: '', debug: {} }; },
-        ])
-    ) as Record<PipelineMode, any>;
-
-    await dispatchWithHandlers({ ...baseRequest, pipelineMode: 'balanced_v6' }, fakeHandlers);
+    await dispatchWithHandlers(
+        { ...baseRequest, pipelineMode: 'balanced_v6' },
+        makeFakeHandlers(m => { calledWith = m; }),
+    );
     assert.equal(calledWith, 'balanced_v5', 'dispatcher resolves balanced_v6 to aliased balanced_v5 handler');
     pass('dispatcher resolves balanced_v6 to aliased balanced_v5 handler');
 }
 
 {
-    const historicalModes: PipelineMode[] = ['baseline_original','balanced_v1','balanced_v2','balanced_v2_1','balanced_v2_2','balanced_v3_0','balanced_v4_0','balanced_v4_1','improved_current'];
-    for (const mode of historicalModes) {
+    // Every remaining non-aliased mode routes to itself; archived modes are invalid input.
+    for (const mode of ALL_MODES.filter(m => m !== 'balanced_v6')) {
         const called: PipelineMode[] = [];
-        const fakeHandlers = Object.fromEntries(
-            ['baseline_original','balanced_v1','balanced_v2','balanced_v2_1','balanced_v2_2',
-             'balanced_v3_0','balanced_v4_0','balanced_v4_1','balanced_v5','balanced_v6',
-             'balanced_v7','improved_current'].map(k => [
-                k,
-                async () => { called.push(k as PipelineMode); return { image: '', debug: {} }; },
-            ])
-        ) as Record<PipelineMode, any>;
-        await dispatchWithHandlers({ ...baseRequest, pipelineMode: mode }, fakeHandlers);
+        await dispatchWithHandlers({ ...baseRequest, pipelineMode: mode }, makeFakeHandlers(m => called.push(m)));
         assert.equal(called[0], mode, `${mode} should route to itself`);
     }
-    pass('historical benchmark modes remain callable in dispatcher');
+    assert.throws(
+        () => normalizePipelineModeInput('balanced_v4_1'),
+        /Unsupported pipeline mode/,
+        'archived legacy modes are rejected as request input',
+    );
+    pass('all live modes route to themselves; archived legacy modes are rejected');
 }
 
 // ── Composer contracts ────────────────────────────────────────────────────────

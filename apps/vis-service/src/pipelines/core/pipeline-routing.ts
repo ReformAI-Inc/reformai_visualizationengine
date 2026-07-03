@@ -24,21 +24,15 @@ export const resolveDispatchModes = (
     return { logMode, handlerMode };
 };
 
+// Legacy modes (balanced_v1..v4_1, improved_current) archived 2026-07-02 —
+// see archive/legacy-pipelines/. Requests naming them now fail validation.
 const VALID_PIPELINE_MODES: PipelineMode[] = [
     'baseline_original',
-    'balanced_v1',
-    'balanced_v2',
-    'balanced_v2_1',
-    'balanced_v2_2',
-    'balanced_v3_0',
-    'balanced_v4_0',
-    'balanced_v4_1',
     'balanced_v5',
     'balanced_v6',
     'balanced_v7',
     'balanced_v7_nb2',
     'balanced_v8',
-    'improved_current',
 ];
 
 export const normalizePipelineModeInput = (pipelineMode: unknown): PipelineMode => {

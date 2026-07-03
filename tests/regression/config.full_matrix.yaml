@@ -1,5 +1,7 @@
-version: "2.0-full-matrix"
+version: "2.1-full-matrix"
 created: "2026-05-11"
+# 2026-07-02: balanced_v4_0 / balanced_v4_1 rows removed — legacy modes archived
+# (archive/legacy-pipelines/); requests naming them now fail schema validation.
 
 api_base: "http://localhost:8080"
 anthropic_api_key: "YOUR_API_KEY_HERE" # Moved to .env
@@ -9,14 +11,6 @@ pipelines:
     role: anchor
     label: "Baseline (Historical Anchor)"
     slug: baseline
-  - mode: balanced_v4_0
-    role: furniture_control_benchmark
-    label: "Balanced V4.0 (Furniture/Control Benchmark)"
-    slug: v4_0
-  - mode: balanced_v4_1
-    role: furniture_control_benchmark
-    label: "Balanced V4.1 (Furniture/Control Benchmark)"
-    slug: v4_1
   - mode: balanced_v5
     role: moodboard_benchmark
     label: "Balanced V5.2.1 (Moodboard Benchmark)"

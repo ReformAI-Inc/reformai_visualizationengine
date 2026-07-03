@@ -1,7 +1,8 @@
 // ============================================================
 // ROOM TYPE REGISTRY
 // Single source of truth for room-specific prompt fields.
-// All values injected via the balanced_v3_0 injection layer.
+// Injection layer introduced in balanced_v3_0 (archived); consumed by the
+// active V5/V7/V8 prompt builders.
 // ============================================================
 
 export interface RoomTypeEntry {
