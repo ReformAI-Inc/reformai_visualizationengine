@@ -1,7 +1,16 @@
 # Agent Handoff
-**Last Updated:** 2026-06-11
+**Last Updated:** 2026-07-03
 
-## Current Snapshot
+## Read these first
+1. `tasks/current-state.md` — where the project stands right now
+2. `docs/PLATFORM_STATUS.md` — operational truth (modes, gate, validation)
+3. `docs/ENGINE_BLUEPRINT.md` — design authority for all future work
+4. Memory: the NB2 gate evidence is COMPLETE and PASSING; the `DEFAULT_IMAGE_MODEL` flip awaits human sign-off. NB2 returns JPEG (old model: PNG) — never assume image mime.
+
+## Current Snapshot (2026-07-03)
+Gate 2.0 + judge 2.0 + repeats are live; paid runs executed: V7 baseline PASS (4.15, accepted), Run A NB2 PASS (4.38, 0 rejections), Run B NB2+verify PASS (4.40; verification repaired 2/36 first-attempt violations). Legacy pipelines V1–V4.1/improved archived. Items 2–3 below are historical (2026-06-11); item 3's claim about a `balanced-v6` handler module is **obsolete** — v6 is a routing alias (`HANDLER_ALIASES`), no module exists.
+
+## Previous snapshot (2026-06-11)
 The structural cleanup pass is complete. The repo now follows a clear backend responsibility model:
 - `transport`
 - `pipelines`

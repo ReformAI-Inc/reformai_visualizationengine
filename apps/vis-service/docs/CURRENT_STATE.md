@@ -1,27 +1,11 @@
-# vis-service Current State (Derived)
-**Last Updated:** 2026-05-21
+# vis-service Current State — MOVED
 
-Authoritative lifecycle source:
-- `docs/PLATFORM_STATUS.md`
+This derived copy went stale (its 2026-05-21 content described a `balanced-v6`
+handler module that no longer exists) and is intentionally no longer maintained.
 
-## Runtime Defaults
-- Default mode: `balanced_v7`
-- Canonical orchestration: AGT extraction/classification + generation
+Authoritative sources:
+- `docs/PLATFORM_STATUS.md` — operational truth (modes, gate, validation)
+- `docs/CURRENT_STATE.md` (repo root docs/) — current-state summary
+- `docs/ENGINE_BLUEPRINT.md` — design authority
 
-## Routing Behavior
-- `balanced_v7`: canonical active path
-- `balanced_v6`: explicit comparison path (`pipelines/versions/balanced-v6`)
-- Historical benchmark modes remain callable via legacy handlers
-
-## Source Layout
-- `src/transport`: HTTP and request assembly
-- `src/pipelines`: mode routing + orchestration by version
-- `src/prompts`: prompt blocks/templates/composition
-- `src/guardrails`: AGT and structural safety layer
-- `src/models`: provider execution clients
-- `src/catalog`: contractor catalogue feature
-- `src/shared`: shared contracts/registries/validation
-
-## Validation
-- Build: `npm run build`
-- Contracts: `npm run test:contracts`
+Do not add content here.
