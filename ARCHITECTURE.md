@@ -1,7 +1,9 @@
 # ReformAI Visualization Engine — Architecture
 
-**Last Updated:** 2026-05-27
+**Last Updated:** 2026-05-27 (historical record; sections describing v6 handler modules and human-only scoring predate the 2026-06/07 changes)
 **Scope:** Complete architectural history from inception through V8. Every major decision, what triggered it, what it solved, and what it deliberately did not solve.
+
+> **2026-07-03:** The forward-looking design authority is now **`docs/ENGINE_BLUEPRINT.md`** (V2 architecture: task profiles, model policy, layered geometry preservation, evaluation platform, ADRs). Current operational truth: `docs/PLATFORM_STATUS.md`. This document remains the historical *why* through V8; where it conflicts with those two (e.g. §8/§11 v6 handler claims, §10 "human scoring is mandatory" — superseded by the automated gate with human adjudication), they win.
 
 For current operational state — active paths, validation commands, deployment topology — see `docs/PLATFORM_STATUS.md`. This document is the *why*. That document is the *what*.
 

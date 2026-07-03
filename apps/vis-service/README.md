@@ -2,11 +2,13 @@
 
 Fastify backend for the Visualization Engine.
 
-## Canonical and Comparison Modes
-- Canonical active candidate: `balanced_v7`
-- Catalogue-first comparison candidate: `balanced_v8` (regression pending)
-- Comparison mode `balanced_v6`: explicit alias of the `balanced_v5` handler
-- Historical/frozen benchmark modes remain callable for comparison workflows.
+## Canonical and Comparison Modes (6 valid modes as of 2026-07-02)
+- Canonical production pipeline: `balanced_v7`
+- Migration A/B vehicle: `balanced_v7_nb2` (V7 prompts on `gemini-3.1-flash-image`; gate evidence PASSING, pending default flip; deleted after flip)
+- Catalogue-first (demoted): `balanced_v8` — pending absorption into V9 `product_install` profile
+- `balanced_v6`: explicit alias of the `balanced_v5` handler
+- `baseline_original`: the regression gate's frozen visual anchor
+- Legacy modes V1–V4.1/improved: **archived** to `archive/legacy-pipelines/` (no longer valid request input)
 
 Authoritative lifecycle source: `../../docs/PLATFORM_STATUS.md`
 
