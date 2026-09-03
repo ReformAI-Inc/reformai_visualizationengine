@@ -1,0 +1,81 @@
+# Production visualization engine.
+#
+# main → reform-ai-vis-prod (us-central1). Its QA twin is deploy-vis-qa.yml,
+# deployed from the `qa` branch; the two workflows are deliberately identical
+# apart from the branch, service name and secret, so a change proven in QA
+# reaches production by merging, not by editing deploy steps.
+#
+# The legacy sandbox service `reform-ai-vis` is NOT touched by this workflow —
+# see deploy-vis-sandbox.yml, which is manual-only.
+name: Deploy vis-service to Cloud Run (PROD)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/vis-service/**'
+      - '.github/workflows/deploy-vis-prod.yml'
+  workflow_dispatch:
+
+env:
+  SERVICE: reform-ai-vis-prod
+  REGION: us-central1
+  # Per-environment Gemini key, so QA experiments never consume production
+  # quota, rate limits or billing.
+  API_KEY_SECRET: vis-gemini-api-key-prod
+
+jobs:
+  deploy:
+    name: Build & deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Extract GCP project ID from credentials
+        id: gcp
+        run: |
+          PROJECT_ID=$(echo '${{ secrets.GOOGLE_SERVICE_ACCOUNT_KEY }}' | jq -r .project_id)
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE }} \
+            --source apps/vis-service \
+            --region ${{ env.REGION }} \
+            --project ${{ steps.gcp.outputs.project_id }} \
+            --allow-unauthenticated \
+            --set-secrets "API_KEY=${{ env.API_KEY_SECRET }}:latest" \
+            --set-env-vars "NODE_ENV=production,VIS_ENV=prod" \
+            --quiet
+
+      # A manual `gcloud run deploy --no-traffic` (during an incident, say)
+      # pins the service away from "serve LATEST" until someone explicitly
+      # restores it — silently leaving every later deploy at 0% traffic with no
+      # error. Forcing it back on every CI deploy means that can never persist
+      # unnoticed. Same guard as Reform-AI's own API deploys.
+      - name: Ensure traffic follows latest revision
+        run: |
+          gcloud run services update-traffic ${{ env.SERVICE }} \
+            --to-latest \
+            --region ${{ env.REGION }} \
+            --project ${{ steps.gcp.outputs.project_id }}
+
+      - name: Report deployed URL
+        run: |
+          gcloud run services describe ${{ env.SERVICE }} \
+            --region ${{ env.REGION }} \
+            --project ${{ steps.gcp.outputs.project_id }} \
+            --format 'value(status.url)'

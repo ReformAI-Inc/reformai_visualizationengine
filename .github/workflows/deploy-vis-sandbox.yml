@@ -1,10 +1,14 @@
-name: Deploy vis-service to Cloud Run
+# Legacy sandbox service (`reform-ai-vis`, us-central1, private — invoked by the
+# Netlify proxy in netlify/functions/api.mjs).
+#
+# Deliberately manual-only since the QA/PROD environments were split out:
+# pushing to main deploys reform-ai-vis-prod, and this service is no longer part
+# of that path. Kept so the sandbox can still be updated on purpose, rather than
+# riding along on every merge to main.
+name: Deploy vis-service to Cloud Run (legacy sandbox, manual)
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/vis-service/**'
+  workflow_dispatch:
 
 jobs:
   deploy:
