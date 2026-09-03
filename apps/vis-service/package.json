@@ -8,7 +8,7 @@
     "build": "tsc",
     "check:extractor": "tsx src/tools/agt-extractor-check.ts",
     "start": "node dist/index.js",
-    "test": "tsx --test src/**/*.test.ts",
+    "test": "tsx --test $(find src -name '*.test.ts' | tr '\\n' ' ')",
     "build:contracts": "tsc -p tsconfig.contract-tests.json",
     "test:contracts": "npm run build:contracts && node dist-test/contracts/runContracts.js"
   },

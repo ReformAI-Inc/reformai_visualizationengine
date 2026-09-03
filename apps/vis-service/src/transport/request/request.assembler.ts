@@ -20,6 +20,38 @@ import type { GenerateVisualizationParams } from '../../shared/types/core.js';
 import { STYLE_REGISTRY } from '../../shared/styles.registry.js';
 import { parseMultipartForm } from './multipart.parser.js';
 
+/**
+ * Fills a style preset in from STYLE_REGISTRY when the caller only names it.
+ *
+ * Callers identify a style by whichever handle they hold — Reform-AI sends the
+ * registry *id* ("contemporary") in the `name` field, while the sandbox sends
+ * the display name ("Contemporary"). Matching id-to-id and name-to-name
+ * case-sensitively meant neither of those resolved: the preset kept its empty
+ * `model_inputs` default and the V7 prompt builder then rejected the request
+ * with "core_materials must be a non-empty array" — surfacing as a 500 on every
+ * generation.
+ *
+ * So: compare every handle the caller gave against both fields, case- and
+ * whitespace-insensitively. A preset that carries its own `model_inputs` and
+ * matches nothing in the registry is left untouched, which is what lets a
+ * caller pass a bespoke style.
+ */
+export function resolveRegisteredStyle(stylePreset: StylePreset): StylePreset {
+    const handles = [stylePreset.id, stylePreset.name]
+        .filter((value): value is string => typeof value === 'string' && value.trim() !== '')
+        .map((value) => value.trim().toLowerCase());
+
+    if (handles.length === 0) return stylePreset;
+
+    const registeredStyle = STYLE_REGISTRY.find((s: { id?: string; name: string }) =>
+        handles.includes((s.id ?? '').toLowerCase()) || handles.includes(s.name.toLowerCase()),
+    );
+
+    return registeredStyle
+        ? { ...registeredStyle, imageUrl: stylePreset.imageUrl }
+        : stylePreset;
+}
+
 export interface ProcessedVisualizationData {
     roomImage: MultipartFile & { buffer: Buffer };
     roomType: string;
@@ -62,10 +94,7 @@ export const processVisualizationFormData = async (
     const pipelineMode = queryMode ?? (fields['pipelineMode']?.toString() as any) ?? 'balanced_v7';
 
     let stylePreset = parseJSON<StylePreset>(fields['stylePreset']?.toString(), 'stylePreset');
-    const registeredStyle = STYLE_REGISTRY.find((s: { id?: string; name: string }) => s.id === stylePreset.id || s.name === stylePreset.name);
-    if (registeredStyle) {
-        stylePreset = { ...registeredStyle, imageUrl: stylePreset.imageUrl };
-    }
+    stylePreset = resolveRegisteredStyle(stylePreset);
 
     const renovationSelectionIds: RenovationSelectionIds | undefined = fields['renovationSelectionIds']
         ? parseJSON<RenovationSelectionIds>(fields['renovationSelectionIds'].toString(), 'renovationSelectionIds')
