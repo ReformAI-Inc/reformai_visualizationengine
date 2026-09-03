@@ -5,9 +5,16 @@
 import type { GeminiPart } from '../shared/generation-parts.js';
 import { providerFor } from './provider-registry.js';
 
-// The active image generation model. Update to switch models across all
-// pipelines (per-mode overrides arrive with the migration comparison modes).
-export const DEFAULT_IMAGE_MODEL = 'gemini-2.5-flash-image';
+// The active image generation model for every pipeline that does not name one.
+//
+// Env-driven so a model migration is an environment change rather than a code
+// change: QA runs `IMAGE_MODEL=gemini-3.1-flash-image` while production stays on
+// the 2.5 default until the comparison says otherwise. Unset anywhere else, so
+// local runs and the sandbox keep today's behaviour.
+//
+// Any `gemini-*` id routes through the Gemini provider (see provider-registry),
+// so switching does not need a code path of its own.
+export const DEFAULT_IMAGE_MODEL = process.env.IMAGE_MODEL || 'gemini-2.5-flash-image';
 
 // Text-output model used by AGT extraction.
 export const AGT_EXTRACTION_MODEL = process.env.AGT_EXTRACTION_MODEL || 'gemini-2.5-flash';

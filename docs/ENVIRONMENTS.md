@@ -29,6 +29,36 @@ proven in QA reaches production by merging rather than by editing a deploy step.
 Neither workflow touches `reform-ai-vis`. That legacy sandbox service is now
 deploy-on-demand only (`deploy-vis-sandbox.yml`, `workflow_dispatch`).
 
+## Which model each environment runs
+
+| Environment | Image model | Set by |
+|---|---|---|
+| QA | `gemini-3.1-flash-image` | `IMAGE_MODEL` env var in deploy-vis-qa.yml |
+| Production | `gemini-2.5-flash-image` | in-code default (`IMAGE_MODEL` unset) |
+| Local / sandbox | `gemini-2.5-flash-image` | in-code default |
+
+`DEFAULT_IMAGE_MODEL` reads `IMAGE_MODEL` and falls back to 2.5, so a model
+migration is an environment change rather than a code change, and production
+cannot be moved by accident. Any `gemini-*` id routes through the Gemini
+provider, so no new code path is needed to switch.
+
+To try a different id in QA, edit `IMAGE_MODEL` in deploy-vis-qa.yml and push
+`qa`; to promote it, set the same value in deploy-vis-prod.yml (or change the
+in-code default once the migration is finished).
+
+Available image models can be listed with the environment's own key:
+
+```
+K=$(gcloud secrets versions access latest --secret=vis-gemini-api-key-qa --project=reformai-core)
+curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$K&pageSize=200" \
+  | python3 -c "import json,sys; [print(m['name']) for m in json.load(sys.stdin)['models'] if 'image' in m['name']]"
+```
+
+Note the separate `balanced_v7_nb2` pipeline mode (`?mode=balanced_v7_nb2`),
+which runs `NB2_IMAGE_MODEL` on identical V7 prompts. That is for A/B comparing
+two models against the *same* request; `IMAGE_MODEL` is for moving a whole
+environment.
+
 ## What the services expect
 
 `API_KEY` is mounted from Secret Manager (never a plaintext env var — the legacy
