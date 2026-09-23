@@ -22,10 +22,11 @@ env:
   # Per-environment Gemini key, so QA experiments never consume production
   # quota, rate limits or billing.
   API_KEY_SECRET: vis-gemini-api-key-qa
-  # QA is where the model migration is proven. Production has no IMAGE_MODEL set
-  # and so stays on the in-code default (gemini-2.5-flash-image) until this has
-  # been compared and signed off.
-  IMAGE_MODEL: gemini-3.1-flash-image
+  # Both the key and the model come from Secret Manager, so which model an
+  # environment runs is changed by adding a secret version — no commit, and no
+  # model id in the repo. QA is where the migration is proven; the prod secret
+  # holds 2.5 until it is signed off.
+  IMAGE_MODEL_SECRET: vis-image-model-qa
 
 jobs:
   deploy:
@@ -60,8 +61,8 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ steps.gcp.outputs.project_id }} \
             --allow-unauthenticated \
-            --set-secrets "API_KEY=${{ env.API_KEY_SECRET }}:latest" \
-            --set-env-vars "NODE_ENV=production,VIS_ENV=qa,IMAGE_MODEL=${{ env.IMAGE_MODEL }}" \
+            --set-secrets "API_KEY=${{ env.API_KEY_SECRET }}:latest,IMAGE_MODEL=${{ env.IMAGE_MODEL_SECRET }}:latest" \
+            --set-env-vars "NODE_ENV=production,VIS_ENV=qa" \
             --quiet
 
       # A manual `gcloud run deploy --no-traffic` (during an incident, say)

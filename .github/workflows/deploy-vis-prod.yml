@@ -23,6 +23,10 @@ env:
   # Per-environment Gemini key, so QA experiments never consume production
   # quota, rate limits or billing.
   API_KEY_SECRET: vis-gemini-api-key-prod
+  # Production's model is explicit in its own secret rather than inherited from
+  # a code default, so promoting a model is a secret version here — reviewed and
+  # reversible on its own, without a deploy of the service code.
+  IMAGE_MODEL_SECRET: vis-image-model-prod
 
 jobs:
   deploy:
@@ -57,7 +61,7 @@ jobs:
             --region ${{ env.REGION }} \
             --project ${{ steps.gcp.outputs.project_id }} \
             --allow-unauthenticated \
-            --set-secrets "API_KEY=${{ env.API_KEY_SECRET }}:latest" \
+            --set-secrets "API_KEY=${{ env.API_KEY_SECRET }}:latest,IMAGE_MODEL=${{ env.IMAGE_MODEL_SECRET }}:latest" \
             --set-env-vars "NODE_ENV=production,VIS_ENV=prod" \
             --quiet
 

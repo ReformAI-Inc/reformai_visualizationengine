@@ -5,11 +5,11 @@ branch. Reform-AI's API points at one of them through
 `VISUALIZATION_SERVICE_URL`, so which engine a Reform-AI environment talks to is
 a configuration choice on that side, not a code change on this one.
 
-| Environment | Branch | Cloud Run service | Region | Gemini key (Secret Manager) |
+| Environment | Branch | Cloud Run service | Region | Secrets (Secret Manager) |
 |---|---|---|---|---|
-| Production | `main` | `reform-ai-vis-prod` | us-central1 | `vis-gemini-api-key-prod` |
-| QA | `qa` | `reform-ai-vis-qa` | us-central1 | `vis-gemini-api-key-qa` |
-| Legacy sandbox | — (manual) | `reform-ai-vis` | us-central1 | plaintext env var |
+| Production | `main` | `reform-ai-vis-prod` | us-central1 | `vis-gemini-api-key-prod`, `vis-image-model-prod` |
+| QA | `qa` | `reform-ai-vis-qa` | us-central1 | `vis-gemini-api-key-qa`, `vis-image-model-qa` |
+| Legacy sandbox | — (manual) | `reform-ai-vis` | us-central1 | none (plaintext env var) |
 
 All in GCP project `reformai-core`.
 
@@ -31,20 +31,31 @@ deploy-on-demand only (`deploy-vis-sandbox.yml`, `workflow_dispatch`).
 
 ## Which model each environment runs
 
-| Environment | Image model | Set by |
+| Environment | Image model | Held in |
 |---|---|---|
-| QA | `gemini-3.1-flash-image` | `IMAGE_MODEL` env var in deploy-vis-qa.yml |
-| Production | `gemini-2.5-flash-image` | in-code default (`IMAGE_MODEL` unset) |
-| Local / sandbox | `gemini-2.5-flash-image` | in-code default |
+| QA | `gemini-3.1-flash-image` | secret `vis-image-model-qa` |
+| Production | `gemini-2.5-flash-image` | secret `vis-image-model-prod` |
+| Local / sandbox | `gemini-2.5-flash-image` | in-code fallback (`IMAGE_MODEL` unset) |
 
-`DEFAULT_IMAGE_MODEL` reads `IMAGE_MODEL` and falls back to 2.5, so a model
-migration is an environment change rather than a code change, and production
-cannot be moved by accident. Any `gemini-*` id routes through the Gemini
-provider, so no new code path is needed to switch.
+Each environment's model is a secret of its own, injected as `IMAGE_MODEL`.
+`DEFAULT_IMAGE_MODEL` still falls back to 2.5 when nothing is injected, so a
+missing or emptied secret degrades to today's production model rather than
+requesting an empty model id. Any `gemini-*` id routes through the Gemini
+provider, so switching needs no code path of its own.
 
-To try a different id in QA, edit `IMAGE_MODEL` in deploy-vis-qa.yml and push
-`qa`; to promote it, set the same value in deploy-vis-prod.yml (or change the
-in-code default once the migration is finished).
+Changing the model in an environment — no commit, no code deploy:
+
+```
+printf '%s' 'gemini-3.1-flash-image' | gcloud secrets versions add vis-image-model-qa \
+  --project=reformai-core --data-file=-
+gcloud run services update reform-ai-vis-qa --region=us-central1 \
+  --project=reformai-core --update-labels=model-rotated=$(date +%s)
+```
+
+The second command matters: Cloud Run resolves `:latest` when a **revision
+starts**, so a new secret version is not picked up until the service gets a new
+revision. Promoting a model to production is the same two commands against
+`vis-image-model-prod` and `reform-ai-vis-prod`.
 
 Available image models can be listed with the environment's own key:
 
