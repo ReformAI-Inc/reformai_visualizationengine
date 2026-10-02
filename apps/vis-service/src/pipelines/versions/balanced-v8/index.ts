@@ -31,7 +31,7 @@ import { generateWithVerification } from '../../../guardrails/verified-generatio
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> => {
+): Promise<{ image: string; model: string; debug: any }> => {
     const {
         roomImage,
         roomType,
@@ -128,7 +128,7 @@ export const generateVisualization = async (
         itemImage: item?.image ?? null,
     });
 
-    const { image, verification } = await generateWithVerification(
+    const { image, modelId, verification } = await generateWithVerification(
         parts,
         rawAGT,
         classifiedAGT,
@@ -137,6 +137,7 @@ export const generateVisualization = async (
 
     return {
         image,
+        model: modelId,
         debug: {
             pipelineMode: 'balanced_v8',
             templateVersion: '8.0.0',

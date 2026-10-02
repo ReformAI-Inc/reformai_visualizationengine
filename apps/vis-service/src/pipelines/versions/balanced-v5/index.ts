@@ -23,7 +23,7 @@ import { callGemini } from '../../../models/gemini.client.js';
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> => {
+): Promise<{ image: string; model: string; debug: any }> => {
     const {
         roomType,
         stylePreset,
@@ -108,10 +108,11 @@ export const generateVisualization = async (
         itemImage: item?.image ?? null,
     });
 
-    const { image } = await callGemini(parts);
+    const { image, modelId } = await callGemini(parts);
 
     return {
         image,
+        model: modelId,
         debug: {
             pipelineMode: 'balanced_v5',
             templateVersion: '6.0.0',

@@ -27,6 +27,7 @@ export async function generateVisualizationController(
             data: {
                 image: result.image,
                 metadata: {
+                    model: result.model,
                     roomType: data.roomType,
                     stylePreset: data.stylePreset.name,
                     isRefinement: data.isRefinement,

@@ -10,7 +10,11 @@ import { resolveDispatchModes, resolveHandlerMode, resolvePipelineMode, type Pip
 // gemini-2.5-flash-image shutdown they all hardcoded. baseline_original stays:
 // it is the regression gate's fixed visual anchor.
 
-type PipelineHandler = (params: GenerateVisualizationParams) => Promise<{ image: string; debug: any }>;
+// `model` is the image model that actually generated `image`, so callers can
+// report it without knowing which pipeline or environment default applied.
+export type PipelineResult = { image: string; model: string; debug: any };
+
+type PipelineHandler = (params: GenerateVisualizationParams) => Promise<PipelineResult>;
 
 const PIPELINE_HANDLERS: Record<PipelineMode, PipelineHandler> = {
     baseline_original: baselineService.generateVisualization,
@@ -34,7 +38,7 @@ export const getPipelineHandlerForMode = (mode: PipelineMode): PipelineHandler =
 export const dispatchWithHandlers = async (
     params: GenerateVisualizationParams,
     handlers: Record<PipelineMode, PipelineHandler>,
-): Promise<{ image: string; debug: any }> => {
+): Promise<PipelineResult> => {
     const mode = resolvePipelineMode(params.pipelineMode);
     const handlerMode = resolveHandlerMode(mode);
     return handlers[handlerMode](params);
@@ -42,7 +46,7 @@ export const dispatchWithHandlers = async (
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> => {
+): Promise<PipelineResult> => {
     const { logMode, handlerMode } = resolveDispatchModes(params.pipelineMode);
     console.log(PIPELINE_LOGS[logMode]);
     const result = await dispatchWithHandlers(params, PIPELINE_HANDLERS);

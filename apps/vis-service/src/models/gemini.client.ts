@@ -8,9 +8,10 @@ import { callImageModel } from './image-model.client.js';
 
 export interface GeminiResult {
     image: string; // base64-encoded image data
+    modelId: string; // the model that actually generated the image
 }
 
 export const callGemini = async (parts: GeminiPart[]): Promise<GeminiResult> => {
-    const { image } = await callImageModel({ parts });
-    return { image };
+    const { image, modelId } = await callImageModel({ parts });
+    return { image, modelId };
 };

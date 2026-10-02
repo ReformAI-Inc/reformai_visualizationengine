@@ -236,7 +236,7 @@ const makeFakeHandlers = (record: (mode: PipelineMode) => void) =>
     Object.fromEntries(
         ALL_MODES.map(k => [
             k,
-            async () => { record(k); return { image: '', debug: {} }; },
+            async () => { record(k); return { image: '', model: 'test-model', debug: {} }; },
         ]),
     ) as Record<PipelineMode, any>;
 

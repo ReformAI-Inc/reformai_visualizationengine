@@ -34,7 +34,7 @@ export const generateWithModel = async (
     params: GenerateVisualizationParams,
     modelId: string | undefined,
     debugMode: string,
-): Promise<{ image: string; debug: any }> => {
+): Promise<{ image: string; model: string; debug: any }> => {
     const {
         roomImage,
         roomType,
@@ -133,7 +133,7 @@ export const generateWithModel = async (
         itemImage: item?.image ?? null,
     });
 
-    const { image, verification } = await generateWithVerification(
+    const { image, modelId: usedModelId, verification } = await generateWithVerification(
         parts,
         rawAGT,
         classifiedAGT,
@@ -142,10 +142,11 @@ export const generateWithModel = async (
 
     return {
         image,
+        model: usedModelId,
         debug: {
             pipelineMode: debugMode,
             templateVersion: '7.0.0',
-            imageModelId: modelId ?? null,
+            imageModelId: usedModelId,
             agtVerification: verification,
             agtStatus,
             agtFallbackReason,
@@ -190,5 +191,5 @@ export const generateWithModel = async (
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> =>
+): Promise<{ image: string; model: string; debug: any }> =>
     generateWithModel(params, undefined, 'balanced_v7');

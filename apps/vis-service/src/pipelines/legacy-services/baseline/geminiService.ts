@@ -35,7 +35,7 @@ const bufferToGenerativePart = (file: MultipartFile & { buffer: Buffer }) => {
 	};
 };
 
-export const generateVisualization = async (params: GenerateVisualizationParams): Promise<{ image: string, debug: any }> => {
+export const generateVisualization = async (params: GenerateVisualizationParams): Promise<{ image: string, model: string, debug: any }> => {
 	const {
 		roomImage,
 		roomType,
@@ -104,6 +104,7 @@ export const generateVisualization = async (params: GenerateVisualizationParams)
 	if (firstPart && firstPart.inlineData && firstPart.inlineData.data) {
 		return {
             image: firstPart.inlineData.data,
+            model,
             debug: {
                 pipelineMode: 'baseline_original',
                 finalPrompt: fullPrompt,
