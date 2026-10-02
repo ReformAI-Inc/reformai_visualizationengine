@@ -20,18 +20,18 @@ const loadModelClient = async (imageModel?: string) => {
 };
 
 describe('DEFAULT_IMAGE_MODEL', () => {
-    test('stays on 2.5 when IMAGE_MODEL is unset (production, local, sandbox)', async () => {
+    test('falls back to 3.1 when IMAGE_MODEL is unset (local, sandbox)', async () => {
         const { DEFAULT_IMAGE_MODEL } = await loadModelClient(undefined);
-        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-2.5-flash-image');
+        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-3.1-flash-image');
     });
 
     test('honours IMAGE_MODEL so a migration is an env change, not a code change', async () => {
-        const { DEFAULT_IMAGE_MODEL } = await loadModelClient('gemini-3.1-flash-image');
-        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-3.1-flash-image');
+        const { DEFAULT_IMAGE_MODEL } = await loadModelClient('gemini-3-pro-image');
+        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-3-pro-image');
     });
 
     test('an empty IMAGE_MODEL falls back rather than requesting an empty model id', async () => {
         const { DEFAULT_IMAGE_MODEL } = await loadModelClient('');
-        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-2.5-flash-image');
+        assert.equal(DEFAULT_IMAGE_MODEL, 'gemini-3.1-flash-image');
     });
 });

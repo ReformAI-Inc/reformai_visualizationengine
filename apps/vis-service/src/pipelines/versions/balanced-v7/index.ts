@@ -29,8 +29,7 @@ import {
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
 import { generateWithVerification } from '../../../guardrails/verified-generation.js';
 
-// modelId undefined = DEFAULT_IMAGE_MODEL. The balanced_v7_nb2 comparison
-// mode runs these exact prompts on the Gemini 3.x successor model.
+// modelId undefined = DEFAULT_IMAGE_MODEL.
 export const generateWithModel = async (
     params: GenerateVisualizationParams,
     modelId: string | undefined,
@@ -193,13 +192,3 @@ export const generateVisualization = async (
     params: GenerateVisualizationParams,
 ): Promise<{ image: string; debug: any }> =>
     generateWithModel(params, undefined, 'balanced_v7');
-
-// NB2 comparison mode: identical V7 prompts/guardrails on the Gemini 3.x
-// successor model. Override the model id via NB2_IMAGE_MODEL if the GA id
-// differs in your environment.
-export const NB2_IMAGE_MODEL = process.env.NB2_IMAGE_MODEL || 'gemini-3.1-flash-image';
-
-export const generateVisualizationNB2 = async (
-    params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> =>
-    generateWithModel(params, NB2_IMAGE_MODEL, 'balanced_v7_nb2');

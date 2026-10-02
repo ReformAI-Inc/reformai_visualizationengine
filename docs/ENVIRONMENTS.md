@@ -34,13 +34,14 @@ deploy-on-demand only (`deploy-vis-sandbox.yml`, `workflow_dispatch`).
 | Environment | Image model | Held in |
 |---|---|---|
 | QA | `gemini-3.1-flash-image` | secret `vis-image-model-qa` |
-| Production | `gemini-2.5-flash-image` | secret `vis-image-model-prod` |
-| Local / sandbox | `gemini-2.5-flash-image` | in-code fallback (`IMAGE_MODEL` unset) |
+| Production | `gemini-3.1-flash-image` | secret `vis-image-model-prod` |
+| Local / sandbox | `gemini-3.1-flash-image` | in-code fallback (`IMAGE_MODEL` unset) |
 
 Each environment's model is a secret of its own, injected as `IMAGE_MODEL`.
-`DEFAULT_IMAGE_MODEL` still falls back to 2.5 when nothing is injected, so a
-missing or emptied secret degrades to today's production model rather than
-requesting an empty model id. Any `gemini-*` id routes through the Gemini
+`DEFAULT_IMAGE_MODEL` falls back to 3.1 when nothing is injected, so a missing
+or emptied secret degrades to the production model rather than requesting an
+empty model id (`gemini-2.5-flash-image` was shut down 2026-10-02 and is no
+longer a safe fallback). Any `gemini-*` id routes through the Gemini
 provider, so switching needs no code path of its own.
 
 Changing the model in an environment — no commit, no code deploy:
@@ -65,10 +66,8 @@ curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$K&pageSize
   | python3 -c "import json,sys; [print(m['name']) for m in json.load(sys.stdin)['models'] if 'image' in m['name']]"
 ```
 
-Note the separate `balanced_v7_nb2` pipeline mode (`?mode=balanced_v7_nb2`),
-which runs `NB2_IMAGE_MODEL` on identical V7 prompts. That is for A/B comparing
-two models against the *same* request; `IMAGE_MODEL` is for moving a whole
-environment.
+The `balanced_v7_nb2` A/B mode (and `NB2_IMAGE_MODEL`) was removed after
+production moved to 3.1; `IMAGE_MODEL` is now the only model switch.
 
 ## What the services expect
 

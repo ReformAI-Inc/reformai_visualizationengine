@@ -8,13 +8,13 @@ import { providerFor } from './provider-registry.js';
 // The active image generation model for every pipeline that does not name one.
 //
 // Env-driven so a model migration is an environment change rather than a code
-// change: QA runs `IMAGE_MODEL=gemini-3.1-flash-image` while production stays on
-// the 2.5 default until the comparison says otherwise. Unset anywhere else, so
-// local runs and the sandbox keep today's behaviour.
+// change: each Cloud Run environment injects IMAGE_MODEL from its own secret.
+// The fallback is 3.1 because gemini-2.5-flash-image was shut down 2026-10-02,
+// so a missing or emptied secret must still land on a model that exists.
 //
 // Any `gemini-*` id routes through the Gemini provider (see provider-registry),
 // so switching does not need a code path of its own.
-export const DEFAULT_IMAGE_MODEL = process.env.IMAGE_MODEL || 'gemini-2.5-flash-image';
+export const DEFAULT_IMAGE_MODEL = process.env.IMAGE_MODEL || 'gemini-3.1-flash-image';
 
 // Text-output model used by AGT extraction.
 export const AGT_EXTRACTION_MODEL = process.env.AGT_EXTRACTION_MODEL || 'gemini-2.5-flash';

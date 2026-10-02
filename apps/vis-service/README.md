@@ -2,9 +2,9 @@
 
 Fastify backend for the Visualization Engine.
 
-## Canonical and Comparison Modes (6 valid modes as of 2026-07-02)
-- Canonical production pipeline: `balanced_v7`
-- Migration A/B vehicle: `balanced_v7_nb2` (V7 prompts on `gemini-3.1-flash-image`; gate evidence PASSING, pending default flip; deleted after flip)
+## Canonical and Comparison Modes (5 valid modes as of 2026-10-02)
+- Canonical production pipeline: `balanced_v7` (on `gemini-3.1-flash-image` in every environment)
+- `balanced_v7_nb2` migration A/B vehicle: **removed** 2026-10-02 after the default flip
 - Catalogue-first (demoted): `balanced_v8` — pending absorption into V9 `product_install` profile
 - `balanced_v6`: explicit alias of the `balanced_v5` handler
 - `baseline_original`: the regression gate's frozen visual anchor
