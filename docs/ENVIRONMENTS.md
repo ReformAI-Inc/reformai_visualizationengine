@@ -69,6 +69,11 @@ curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=$K&pageSize
 The `balanced_v7_nb2` A/B mode (and `NB2_IMAGE_MODEL`) was removed after
 production moved to 3.1; `IMAGE_MODEL` is now the only model switch.
 
+Consumers can see which model served a request: every successful generation
+response carries it as `data.metadata.model` (e.g. `"gemini-3.1-flash-image"`).
+It is the model that actually produced the image, not the configured default,
+so it also confirms a secret rotation reached the running revision.
+
 ## What the services expect
 
 `API_KEY` is mounted from Secret Manager (never a plaintext env var — the legacy

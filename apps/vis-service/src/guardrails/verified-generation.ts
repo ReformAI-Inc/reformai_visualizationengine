@@ -35,6 +35,7 @@ const FALLBACK_IMAGE_MIME = 'image/png';
 
 export interface VerifiedGenerationResult {
     image: string;
+    modelId: string; // the model that actually generated the image
     verification: AGTVerificationResult | null; // null = verification not run (disabled or no hard facts)
 }
 
@@ -45,17 +46,17 @@ export const generateWithVerification = async (
     opts: { enabled: boolean; modelId?: string },
 ): Promise<VerifiedGenerationResult> => {
     if (!opts.enabled || inputClassified.hard_fact_fields.length === 0) {
-        const { image } = await callImageModel({ parts, modelId: opts.modelId });
-        return { image, verification: null };
+        const { image, modelId } = await callImageModel({ parts, modelId: opts.modelId });
+        return { image, modelId, verification: null };
     }
 
     let attempts = 0;
     let currentParts = parts;
-    let best: { image: string; diff: AGTDiff } | null = null;
+    let best: { image: string; modelId: string; diff: AGTDiff } | null = null;
 
     while (true) {
         attempts++;
-        const { image, mimeType } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
+        const { image, mimeType, modelId } = await callImageModel({ parts: currentParts, modelId: opts.modelId });
 
         let diff: AGTDiff;
         try {
@@ -72,6 +73,7 @@ export const generateWithVerification = async (
             }));
             return {
                 image,
+                modelId,
                 verification: {
                     verified: true,
                     conclusive: false,
@@ -83,7 +85,7 @@ export const generateWithVerification = async (
         }
 
         if (!best || diff.violations.length < best.diff.violations.length) {
-            best = { image, diff };
+            best = { image, modelId, diff };
         }
         if (diff.violations.length === 0 || attempts > MAX_RETRIES) break;
 
@@ -100,6 +102,7 @@ export const generateWithVerification = async (
 
     return {
         image: best!.image,
+        modelId: best!.modelId,
         verification: {
             verified: best!.diff.violations.length === 0,
             conclusive: best!.diff.inconclusiveFields.length === 0,
