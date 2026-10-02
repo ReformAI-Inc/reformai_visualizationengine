@@ -41,7 +41,7 @@ export const generateVisualizationSchema = z.object({
     phaseAnchoringV2: z.boolean().optional().default(false),
     pipelineMode: z.enum([
         'baseline_original', 'balanced_v5', 'balanced_v6',
-        'balanced_v7', 'balanced_v7_nb2', 'balanced_v8',
+        'balanced_v7', 'balanced_v8',
     ]).optional().default('balanced_v7'),
     stylePreset: stylePresetSchema,
     renovationSelectionIds: renovationSelectionIdsSchema,

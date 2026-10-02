@@ -29,13 +29,12 @@ import {
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
 import { generateWithVerification } from '../../../guardrails/verified-generation.js';
 
-// modelId undefined = DEFAULT_IMAGE_MODEL. The balanced_v7_nb2 comparison
-// mode runs these exact prompts on the Gemini 3.x successor model.
+// modelId undefined = DEFAULT_IMAGE_MODEL.
 export const generateWithModel = async (
     params: GenerateVisualizationParams,
     modelId: string | undefined,
     debugMode: string,
-): Promise<{ image: string; debug: any }> => {
+): Promise<{ image: string; model: string; debug: any }> => {
     const {
         roomImage,
         roomType,
@@ -134,7 +133,7 @@ export const generateWithModel = async (
         itemImage: item?.image ?? null,
     });
 
-    const { image, verification } = await generateWithVerification(
+    const { image, modelId: usedModelId, verification } = await generateWithVerification(
         parts,
         rawAGT,
         classifiedAGT,
@@ -143,10 +142,11 @@ export const generateWithModel = async (
 
     return {
         image,
+        model: usedModelId,
         debug: {
             pipelineMode: debugMode,
             templateVersion: '7.0.0',
-            imageModelId: modelId ?? null,
+            imageModelId: usedModelId,
             agtVerification: verification,
             agtStatus,
             agtFallbackReason,
@@ -191,15 +191,5 @@ export const generateWithModel = async (
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> =>
+): Promise<{ image: string; model: string; debug: any }> =>
     generateWithModel(params, undefined, 'balanced_v7');
-
-// NB2 comparison mode: identical V7 prompts/guardrails on the Gemini 3.x
-// successor model. Override the model id via NB2_IMAGE_MODEL if the GA id
-// differs in your environment.
-export const NB2_IMAGE_MODEL = process.env.NB2_IMAGE_MODEL || 'gemini-3.1-flash-image';
-
-export const generateVisualizationNB2 = async (
-    params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> =>
-    generateWithModel(params, NB2_IMAGE_MODEL, 'balanced_v7_nb2');

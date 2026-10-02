@@ -54,7 +54,7 @@ Every major decision in this codebase has a reason. Most of those reasons are th
 
 ## 2. The Product Problem
 
-ReformAI takes a photograph of a room and transforms it into a photorealistic redesign in a selected interior design style. The model is Google Gemini (`gemini-2.5-flash-image`). Inputs include a base room photo, a style preset, optional moodboard reference images, optional user-uploaded furniture items to inject, and a user text request.
+ReformAI takes a photograph of a room and transforms it into a photorealistic redesign in a selected interior design style. The model is Google Gemini (`gemini-3.1-flash-image`; `gemini-2.5-flash-image` until its 2026-10-02 shutdown). Inputs include a base room photo, a style preset, optional moodboard reference images, optional user-uploaded furniture items to inject, and a user text request.
 
 The core tension that defines every architectural decision in this project:
 
@@ -609,7 +609,7 @@ Cloud Run (Fastify — vis-service)
   │
   ▼
 Google Gemini API
-  (gemini-2.5-flash for AGT extraction, gemini-2.5-flash-image for generation)
+  (gemini-2.5-flash for AGT extraction, gemini-3.1-flash-image for generation)
 ```
 
 **Why this stack:**

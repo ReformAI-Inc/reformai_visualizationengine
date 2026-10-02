@@ -25,15 +25,14 @@ and `improved_current` were **archived 2026-07-02** to repo-root `archive/legacy
 
 | Mode | Lifecycle | Handler Location |
 |---|---|---|
-| `baseline_original` | Regression gate's fixed visual anchor (frozen; dies at model EOL — re-freeze the anchor before 2026-10-02) | `pipelines/legacy-services/baseline/geminiService.ts` |
+| `baseline_original` | Regression gate's fixed visual anchor (frozen; hardcodes `gemini-2.5-flash-image`, shut down 2026-10-02 — needs a re-frozen anchor) | `pipelines/legacy-services/baseline/geminiService.ts` |
 | `balanced_v5` | Frozen benchmark reference; serves `balanced_v6` alias | `pipelines/versions/balanced-v5/index.ts` |
 | `balanced_v6` | Explicit alias of `balanced_v5` handler | `pipelines/core/pipeline-routing.ts` (HANDLER_ALIASES) |
-| `balanced_v7` | Canonical production pipeline | `pipelines/versions/balanced-v7/index.ts` |
-| `balanced_v7_nb2` | Migration A/B vehicle (V7 prompts on `gemini-3.1-flash-image`) — delete after the default flip | `balanced-v7/index.ts` (`generateVisualizationNB2`) |
+| `balanced_v7` | Canonical production pipeline (`gemini-3.1-flash-image`) | `pipelines/versions/balanced-v7/index.ts` |
 | `balanced_v8` | Demoted; to be absorbed into V9 `product_install` profile (`ENGINE_BLUEPRINT.md` §8) | `pipelines/versions/balanced-v8/index.ts` |
 
 ## 3. Routing Semantics
-- Mode resolution lives in `pipelines/core/pipeline-routing.ts` (6 valid modes post-archive).
+- Mode resolution lives in `pipelines/core/pipeline-routing.ts` (5 valid modes; `balanced_v7_nb2` removed 2026-10-02).
 - Omitted mode resolves to `balanced_v7`.
 - `balanced_v6` is an explicit, documented alias of the `balanced_v5` handler (declared in `HANDLER_ALIASES`; the debug payload records both `pipelineMode: balanced_v6` and `aliasedToHandler: balanced_v5`).
 

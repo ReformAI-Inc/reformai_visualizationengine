@@ -10,14 +10,17 @@ import { resolveDispatchModes, resolveHandlerMode, resolvePipelineMode, type Pip
 // gemini-2.5-flash-image shutdown they all hardcoded. baseline_original stays:
 // it is the regression gate's fixed visual anchor.
 
-type PipelineHandler = (params: GenerateVisualizationParams) => Promise<{ image: string; debug: any }>;
+// `model` is the image model that actually generated `image`, so callers can
+// report it without knowing which pipeline or environment default applied.
+export type PipelineResult = { image: string; model: string; debug: any };
+
+type PipelineHandler = (params: GenerateVisualizationParams) => Promise<PipelineResult>;
 
 const PIPELINE_HANDLERS: Record<PipelineMode, PipelineHandler> = {
     baseline_original: baselineService.generateVisualization,
     balanced_v5: balancedV5Service.generateVisualization,
     balanced_v6: balancedV5Service.generateVisualization, // aliased: resolveHandlerMode maps balanced_v6 -> balanced_v5
     balanced_v7: balancedV7Service.generateVisualization,
-    balanced_v7_nb2: balancedV7Service.generateVisualizationNB2,
     balanced_v8: balancedV8Service.generateVisualization,
 };
 
@@ -26,7 +29,6 @@ const PIPELINE_LOGS: Record<PipelineMode, string> = {
     balanced_v5: '[Dispatcher] Routing to BALANCED V5 pipeline (Lean V5 - moodboard integration)',
     balanced_v6: '[Dispatcher] Routing BALANCED V6 (explicit alias of V5 handler)',
     balanced_v7: '[Dispatcher] Routing to BALANCED V7 pipeline (AGT confidence-gated enforcement)',
-    balanced_v7_nb2: '[Dispatcher] Routing to BALANCED V7-NB2 comparison (V7 prompts on Gemini 3.x successor model)',
     balanced_v8: '[Dispatcher] Routing to BALANCED V8 pipeline (catalogue-first, installer framing)',
 };
 
@@ -36,7 +38,7 @@ export const getPipelineHandlerForMode = (mode: PipelineMode): PipelineHandler =
 export const dispatchWithHandlers = async (
     params: GenerateVisualizationParams,
     handlers: Record<PipelineMode, PipelineHandler>,
-): Promise<{ image: string; debug: any }> => {
+): Promise<PipelineResult> => {
     const mode = resolvePipelineMode(params.pipelineMode);
     const handlerMode = resolveHandlerMode(mode);
     return handlers[handlerMode](params);
@@ -44,7 +46,7 @@ export const dispatchWithHandlers = async (
 
 export const generateVisualization = async (
     params: GenerateVisualizationParams,
-): Promise<{ image: string; debug: any }> => {
+): Promise<PipelineResult> => {
     const { logMode, handlerMode } = resolveDispatchModes(params.pipelineMode);
     console.log(PIPELINE_LOGS[logMode]);
     const result = await dispatchWithHandlers(params, PIPELINE_HANDLERS);

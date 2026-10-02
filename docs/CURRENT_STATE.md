@@ -1,13 +1,13 @@
 # ReformAI Visualization Engine -- Current State
-**Last Updated:** 2026-07-03
+**Last Updated:** 2026-10-02
 
 Authoritative lifecycle source: `docs/PLATFORM_STATUS.md` · Design authority: `docs/ENGINE_BLUEPRINT.md`
 
 ## Runtime Summary
-- Canonical active pipeline: `balanced_v7` on `gemini-2.5-flash-image` (EOL 2026-10-02)
-- **NB2 migration: gate evidence complete and PASSING** (Run A median 4.38 vs V7 4.15; Run B verification caught 2/36 first-attempt violations). **Awaiting human sign-off for the `DEFAULT_IMAGE_MODEL` flip.**
-- `balanced_v7_nb2`: migration A/B vehicle (delete after flip) · `balanced_v6`: explicit alias of `balanced_v5` · `balanced_v8`: demoted, pending V9 absorption
-- Legacy modes V1–V4.1/improved archived 2026-07-02 (`archive/legacy-pipelines/`); 6 valid modes remain
+- Canonical active pipeline: `balanced_v7` on `gemini-3.1-flash-image` (NB2) in QA and production; `DEFAULT_IMAGE_MODEL` fallback is 3.1 too
+- **NB2 migration done** 2026-10-02 (gate evidence: Run A median 4.38 vs V7 4.15; Run B verification caught 2/36 first-attempt violations). `balanced_v7_nb2` mode removed.
+- `balanced_v6`: explicit alias of `balanced_v5` · `balanced_v8`: demoted, pending V9 absorption
+- Legacy modes V1–V4.1/improved archived 2026-07-02 (`archive/legacy-pipelines/`); 5 valid modes remain
 - NB2 behavioral note: returns **JPEG** (old model: PNG) — mime must be sniffed/provider-reported, never assumed
 
 ## Repository Status
