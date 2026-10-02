@@ -202,21 +202,12 @@ const outputAGT = (overrides: Partial<ArchitecturalGroundTruth>): ArchitecturalG
     pass('verify: violation feedback block well-formed');
 }
 
-// ── NB2 comparison-mode contracts ─────────────────────────────────────────────
-
-{
-    assert.equal(resolveHandlerMode('balanced_v7_nb2'), 'balanced_v7_nb2', 'nb2 mode routes to its own handler');
-    assert.equal(normalizePipelineModeInput('balanced_v7_nb2'), 'balanced_v7_nb2', 'nb2 mode is valid request input');
-    assert.equal(resolvePipelineMode(undefined), 'balanced_v7', 'default remains balanced_v7 (nb2 is opt-in)');
-    pass('balanced_v7_nb2 comparison mode routes and validates; default unchanged');
-}
-
 // ── Provider registry contracts ───────────────────────────────────────────────
 
 {
     const providers = [{ id: 'gemini', supports: (m: string) => m.startsWith('gemini-') }];
-    assert.equal(resolveProvider('gemini-2.5-flash-image', providers), 'gemini', 'current model routes to gemini');
-    assert.equal(resolveProvider('gemini-3.1-flash-image', providers), 'gemini', 'NB2 model routes to gemini');
+    assert.equal(resolveProvider('gemini-3.1-flash-image', providers), 'gemini', 'current model routes to gemini');
+    assert.equal(resolveProvider('gemini-3-pro-image', providers), 'gemini', 'other gemini-* models route to gemini');
     assert.throws(() => resolveProvider('flux-2-pro', providers), /No provider registered/, 'unknown model id throws');
     pass('provider registry routes gemini-* and rejects unknown model ids');
 }
@@ -238,7 +229,7 @@ const outputAGT = (overrides: Partial<ArchitecturalGroundTruth>): ArchitecturalG
 // improved_current moved to archive/legacy-pipelines/.
 const ALL_MODES: PipelineMode[] = [
     'baseline_original', 'balanced_v5', 'balanced_v6',
-    'balanced_v7', 'balanced_v7_nb2', 'balanced_v8',
+    'balanced_v7', 'balanced_v8',
 ];
 
 const makeFakeHandlers = (record: (mode: PipelineMode) => void) =>

@@ -43,7 +43,7 @@ export interface GenerateVisualizationParams {
     geometryPreservation?: boolean;
     phaseAnchoring?: boolean;
     phaseAnchoringV2?: boolean;
-    pipelineMode?: 'baseline_original' | 'balanced_v5' | 'balanced_v6' | 'balanced_v7' | 'balanced_v7_nb2' | 'balanced_v8';
+    pipelineMode?: 'baseline_original' | 'balanced_v5' | 'balanced_v6' | 'balanced_v7' | 'balanced_v8';
     previousResultImage?: (MultipartFile & { buffer: Buffer }) | null;
     contractorId?: string;
     renovationSelectionIds?: import('./catalogue.js').RenovationSelectionIds;

@@ -485,7 +485,6 @@ export default function App() {
     'balanced_v5':      'Balanced V5.1 (Lean — Moodboard)',
     'balanced_v6':      'Balanced V6.0 (Service Provider Catalogue)',
     'balanced_v7':      'Balanced V7 (AGT Confidence-Gated)',
-    'balanced_v7_nb2':  'Balanced V7 — NB2 (V7 prompts on Gemini 3.1)',
     'balanced_v8':      'Balanced V8 (Catalogue-First)',
   };
 
@@ -674,7 +673,6 @@ export default function App() {
                <option value="balanced_v5">Balanced V5.1 (Lean — Moodboard)</option>
                <option value="balanced_v6">Balanced V6.0 (Service Provider Catalogue)</option>
                <option value="balanced_v7">Balanced V7 (AGT Confidence-Gated)</option>
-               <option value="balanced_v7_nb2">Balanced V7 — NB2 (Gemini 3.1)</option>
                <option value="balanced_v8">Balanced V8 (Catalogue-First)</option>
              </select>
           </div>
