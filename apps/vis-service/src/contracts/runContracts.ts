@@ -303,7 +303,7 @@ const makeFakeHandlers = (record: (mode: PipelineMode) => void) =>
             renovationAnchorsBlock: '',
             injectedItemBlockHeader: '',
         },
-        itemImage: null,
+        injectedItems: [],
     });
 
     const textParts = parts

@@ -4,6 +4,8 @@
 
 import type { MultipartFile } from '@fastify/multipart';
 import type { GenerateVisualizationParams, InjectedItem } from './types/core.js';
+import { MAX_INJECTED_ITEMS } from './injected-items.constants.js';
+import { ValidationError } from './validation/validation.utils.js';
 
 export type GeminiPart =
     | { inlineData: { data: string; mimeType: string } }
@@ -18,26 +20,25 @@ export const normalizeInjectedItems = (
     pipelineMode: 'balanced_v5' | 'balanced_v7' | 'balanced_v8',
 ): {
     injectedItems: InjectedItem[];
-    item: InjectedItem | null;
     hasInjectedItem: boolean;
     shimmedFromFurnitureImage: boolean;
 } => {
     let injectedItems: InjectedItem[] = params.injectedItems ?? [];
     const shimmedFromFurnitureImage = injectedItems.length === 0 && !!params.furnitureImage;
     if (shimmedFromFurnitureImage) {
+        // Guarded by the !!params.furnitureImage check in shimmedFromFurnitureImage.
         injectedItems = [{ image: params.furnitureImage! }];
     }
-    if (injectedItems.length > 1) {
-        throw new Error(
-            `${pipelineMode} supports a maximum of 1 injected item. ` +
+    if (injectedItems.length > MAX_INJECTED_ITEMS) {
+        // ValidationError → the controller answers 400, never a 500.
+        throw new ValidationError(
+            `${pipelineMode} supports a maximum of ${MAX_INJECTED_ITEMS} injected items. ` +
             `Received ${injectedItems.length}.`,
         );
     }
-    const item = injectedItems[0] ?? null;
     return {
         injectedItems,
-        item,
-        hasInjectedItem: item !== null,
+        hasInjectedItem: injectedItems.length > 0,
         shimmedFromFurnitureImage,
     };
 };

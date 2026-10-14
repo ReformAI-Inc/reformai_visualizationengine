@@ -5,7 +5,7 @@ import {
     buildConflictClausesBlock,
     buildConstraintHierarchyBlock,
     buildRenovationAnchorsBlock,
-    INJECTED_ITEM_BLOCK_HEADER,
+    buildInjectedItemBlockHeader,
 } from '../../../prompts/balanced_v8/visualization.constants.js';
 import {
     buildVisualizationPrompt,
@@ -45,7 +45,6 @@ export const generateVisualization = async (
 
     const {
         injectedItems,
-        item,
         hasInjectedItem,
         shimmedFromFurnitureImage,
     } = normalizeInjectedItems(params, 'balanced_v8');
@@ -85,6 +84,7 @@ export const generateVisualization = async (
         stylePreset,
         textPrompt,
         hasInjectedItem,
+        injectedItemCount: injectedItems.length,
     });
 
     const agtConstraintBlock    = buildAGTConstraintBlock(classifiedAGT);
@@ -123,9 +123,9 @@ export const generateVisualization = async (
             constraintHierarchyBlock: constraintHierarchy,
             renovationAnchorsBlock,
             agtEchoBlock,
-            injectedItemBlockHeader: INJECTED_ITEM_BLOCK_HEADER,
+            injectedItemBlockHeader: hasInjectedItem ? buildInjectedItemBlockHeader(injectedItems.length) : '',
         },
-        itemImage: item?.image ?? null,
+        injectedItems,
     });
 
     const { image, modelId, verification } = await generateWithVerification(
@@ -156,7 +156,9 @@ export const generateVisualization = async (
             conflictClausesInserted: !!conflictClausesBlock,
             conflictClausesBlock: conflictClausesBlock || null,
             hasInjectedItem,
-            injectedItem: item ? { shimmedFromFurnitureImage } : null,
+            injectedItem: hasInjectedItem ? { shimmedFromFurnitureImage } : null,
+            injectedItemCount: injectedItems.length,
+            injectedItemDescriptions: injectedItems.map((injected) => injected.description ?? null),
             moodboardScopeBlockInserted: hasMoodboards,
             moodboardCount: moodBoardImages.length,
             contractorId: contractorId ?? null,

@@ -6,7 +6,7 @@
 // Note: V7's pipeline adds an AGT tier line on top of this base.
 //       That extension lives in prompts/balanced_v7/visualization.constants.ts.
 
-export const CONSTRAINT_HIERARCHY_BLOCK_VERSION = 'constraint-hierarchy@1.0';
+export const CONSTRAINT_HIERARCHY_BLOCK_VERSION = 'constraint-hierarchy@1.1';
 
 // Returns empty string when inactive — caller checks before pushing a parts entry.
 export const buildConstraintHierarchyBlock = (
@@ -14,18 +14,29 @@ export const buildConstraintHierarchyBlock = (
     hasRenovationAnchors = false,
 ): string => {
     const tier2Active = injectedItemCount > 0;
+    const isMultiItem = injectedItemCount > 1;
 
-    const tier2Header = tier2Active
-        ? 'TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — 1 injected item present]'
-        : 'TIER 2 — INJECTED ITEM CONSTRAINTS [INACTIVE — no injected items in this request]';
+    const tier2Header = !tier2Active
+        ? 'TIER 2 — INJECTED ITEM CONSTRAINTS [INACTIVE — no injected items in this request]'
+        : isMultiItem
+            ? `TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — ${injectedItemCount} injected items present]`
+            : 'TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — 1 injected item present]';
 
-    const tier2Body = tier2Active
-        ? '\n' +
-          '  Preserve the injected item exactly as shown. Silhouette, color, material, and finish are\n' +
-          '  non-negotiable and override style transformation. Do not restyle, recolor, or substitute it.\n' +
-          '  Conflicts with the active style are resolved through surrounding elements —\n' +
-          '  this is intentional, not a style fidelity failure.\n'
-        : '\n';
+    // Single-item body is frozen (byte-identical to constraint-hierarchy@1.0).
+    const tier2Body = !tier2Active
+        ? '\n'
+        : isMultiItem
+            ? '\n' +
+              `  Every one of the ${injectedItemCount} injected products must appear exactly once, each preserved exactly as\n` +
+              '  shown in its own reference image. Silhouette, color, material, and finish are non-negotiable\n' +
+              '  and override style transformation. Do not restyle, recolor, substitute, merge, duplicate, or omit any of them.\n' +
+              '  Conflicts with the active style are resolved through surrounding elements —\n' +
+              '  this is intentional, not a style fidelity failure.\n'
+            : '\n' +
+              '  Preserve the injected item exactly as shown. Silhouette, color, material, and finish are\n' +
+              '  non-negotiable and override style transformation. Do not restyle, recolor, or substitute it.\n' +
+              '  Conflicts with the active style are resolved through surrounding elements —\n' +
+              '  this is intentional, not a style fidelity failure.\n';
 
     const tier2bHeader = hasRenovationAnchors
         ? 'TIER 2B — RENOVATION MATERIAL ANCHORS [ACTIVE — see full anchor block below]'

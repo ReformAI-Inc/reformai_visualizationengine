@@ -1,5 +1,6 @@
 import { IMAGE_ROLES } from '../../prompts/imageRoles.js';
-import type { GenerateVisualizationParams } from '../../shared/types/index.js';
+import type { GenerateVisualizationParams, InjectedItem } from '../../shared/types/index.js';
+import { buildInjectedItemLabel } from '../../prompts/blocks/injected-items.js';
 import type { GeminiPart } from '../../shared/generation-parts.js';
 import { bufferToGenerativePart } from '../../shared/generation-parts.js';
 import { CANONICAL_BLOCK_SEQUENCE } from '../../prompts/shared/sequence.js';
@@ -23,14 +24,15 @@ interface ComposeParams {
     request: GenerateVisualizationParams;
     common: CommonBlocks;
     optional: OptionalBlocks;
-    itemImage?: GenerateVisualizationParams['roomImage'] | null;
+    // 0..MAX_INJECTED_ITEMS items, in caller order. Each gets its own label + image part.
+    injectedItems?: InjectedItem[];
 }
 
 export const composeCanonicalGenerationParts = ({
     request,
     common,
     optional,
-    itemImage,
+    injectedItems = [],
 }: ComposeParams): GeminiPart[] => {
     // Ordering contract lives in prompts/shared/sequence.ts
     // to keep V5/V7 composition aligned and reviewable.
@@ -72,10 +74,14 @@ export const composeCanonicalGenerationParts = ({
         parts.push(bufferToGenerativePart(img));
     });
 
-    if (itemImage) {
+    if (injectedItems.length > 0) {
+        // One header for the whole group, then a label + image pair per item.
+        // With exactly one unlabeled item this is byte-identical to the V4 layout.
         parts.push({ text: optional.injectedItemBlockHeader });
-        parts.push({ text: IMAGE_ROLES.INJECTED_ITEM(1) });
-        parts.push(bufferToGenerativePart(itemImage));
+        injectedItems.forEach((item, i) => {
+            parts.push({ text: buildInjectedItemLabel(i + 1, injectedItems.length, item.description) });
+            parts.push(bufferToGenerativePart(item.image));
+        });
     }
 
     if (common.influencePrompt) {

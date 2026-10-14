@@ -34,6 +34,8 @@ export {
     BALANCED_V5_STYLE_TEMPLATE,
     INJECTED_ITEM_BLOCK_HEADER,
     INJECTED_ITEM_AUDIT_TEXT,
+    buildInjectedItemBlockHeader,
+    buildInjectedItemAuditText,
     buildMoodboardScopeBlock,
     buildRenovationAnchorsBlock,
     V5_MOODBOARD_INFLUENCE_STATEMENT,

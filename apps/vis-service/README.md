@@ -40,6 +40,23 @@ POST /generate-visualization?mode=<pipeline>
 ```
 `mode` is optional; default is `balanced_v7`.
 
+Multipart fields (`multipart/form-data`):
+
+| Field | Kind | Notes |
+|---|---|---|
+| `roomImage` | file, required | jpeg/png/webp, ≤10MB |
+| `roomType`, `stylePreset` (JSON), `styleInfluence` | text, required | |
+| `textPrompt` | text, optional | Free text; surface instructions (walls, floor…) go here, not as images |
+| `moodBoardImages` | file, repeatable 0–10 | Tonal references only |
+| `furnitureImage` | file, optional | Legacy single injected item — unchanged |
+| `productImages` | file, repeatable 1–5 | Product reference images to place in the room (`MAX_INJECTED_ITEMS` = 5) |
+| `productDescriptions` | text, optional | JSON array of strings, same length/order as `productImages`, e.g. `["Sofá Cusco — sofa, grey linen","Lámpara Nórdica — floor lamp"]`. Labels each reference in the prompt; omit for unlabeled items |
+| `previousResultImage`, `isRefinement`, `renovationSelectionIds`, `verifyAGT`, `pipelineMode` | optional | |
+
+400 `Validation Error` (never 500) when: both `furnitureImage` and `productImages` are sent; more than 5 `productImages`; a non-image `productImages` file; `productDescriptions` that is not a JSON string array of the same length (or is sent without `productImages`); `productImages` with `mode=baseline_original` (frozen, single `furnitureImage` only).
+
+Pipeline support: `balanced_v7` (default), `balanced_v8`, and `balanced_v5`/`balanced_v6` accept 1–5 injected items. Each item is sent as its own labeled reference image (`[PRODUCT n: <description>]`) under one plural "place every product exactly once" instruction. With exactly one item and no description the prompt is byte-identical to the legacy single-`furnitureImage` prompt. Response shape is unchanged; `debug` adds `injectedItemCount` and `injectedItemDescriptions`.
+
 ### Catalogue endpoint
 ```http
 GET /api/catalogue

@@ -29,6 +29,7 @@ export {
     V5_MOODBOARD_INFLUENCE_STATEMENT,
     INFLUENCE_PRESET_STYLE_ONLY,
     INJECTED_ITEM_BLOCK_HEADER,
+    buildInjectedItemBlockHeader,
     DEFAULT_USER_REQUEST,
 } from '../shared/canonicalPromptPrimitives.js';
 
@@ -113,17 +114,27 @@ export const buildConstraintHierarchyBlock = (
     hasHardAGTFacts = false,
 ): string => {
     const tier2Active = injectedItemCount > 0;
+    const isMultiItem = injectedItemCount > 1;
 
-    const tier2Header = tier2Active
-        ? 'TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — 1 injected item present]'
-        : 'TIER 2 — INJECTED ITEM CONSTRAINTS [INACTIVE — no injected items in this request]';
+    const tier2Header = !tier2Active
+        ? 'TIER 2 — INJECTED ITEM CONSTRAINTS [INACTIVE — no injected items in this request]'
+        : isMultiItem
+            ? `TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — ${injectedItemCount} injected items present]`
+            : 'TIER 2 — INJECTED ITEM CONSTRAINTS [ACTIVE — 1 injected item present]';
 
-    const tier2Body = tier2Active
-        ? '\n' +
-          '  Preserve the injected item exactly as shown. Silhouette, color, material, and finish are\n' +
-          '  non-negotiable. Do not restyle, recolor, or substitute it. Resolve style conflicts\n' +
-          '  through surrounding non-injected elements only.\n'
-        : '\n';
+    // Single-item body is frozen (unchanged since 8.0.0).
+    const tier2Body = !tier2Active
+        ? '\n'
+        : isMultiItem
+            ? '\n' +
+              `  Every one of the ${injectedItemCount} injected products must appear exactly once, each preserved exactly as\n` +
+              '  shown in its own reference image. Silhouette, color, material, and finish are non-negotiable.\n' +
+              '  Do not restyle, recolor, substitute, merge, duplicate, or omit any of them. Resolve style conflicts\n' +
+              '  through surrounding non-injected elements only.\n'
+            : '\n' +
+              '  Preserve the injected item exactly as shown. Silhouette, color, material, and finish are\n' +
+              '  non-negotiable. Do not restyle, recolor, or substitute it. Resolve style conflicts\n' +
+              '  through surrounding non-injected elements only.\n';
 
     const tier2bHeader = hasRenovationAnchors
         ? 'TIER 2B — INSTALLED CATALOGUE PRODUCTS [ACTIVE — PRIMARY RENDER BRIEF]'

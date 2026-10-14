@@ -23,6 +23,10 @@ V7 also introduces per-style conflict resolution clauses (`buildConflictClausesB
 - Per-style conflict resolution clauses injected after the style block
 - V7-specific constraint hierarchy extension (AGT tier line when hard facts exist)
 
+## Injected items (1–5)
+
+`productImages` (or legacy `furnitureImage`) become 1..`MAX_INJECTED_ITEMS` (5) injected items. Prompt assembly is the pure `assembleBalancedV7Parts` (unit-tested without model calls). One item → the frozen V4 header/label/audit text (byte-identical to pre-multi-item renders). 2–5 items → plural header (every product exactly once, no duplicates/merges), `[PRODUCT n: <description>]` label + image per item, Tier 2 header naming the count, plural self-audit. AGT extraction/verification is architectural only and does not read the items.
+
 ## Acceptance criteria (last validated)
 
 - Zero hard rejections per 12-case regression

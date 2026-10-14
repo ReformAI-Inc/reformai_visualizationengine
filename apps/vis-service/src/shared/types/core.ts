@@ -8,6 +8,9 @@ export type ItemFidelityMode = 'preserve' | 'exact';
 export interface InjectedItem {
     image: MultipartFile & { buffer: Buffer };
     fidelityMode?: ItemFidelityMode;
+    // Optional caller-supplied label (e.g. "Sofá Cusco — sofa, grey linen") shown
+    // next to this item's reference image in the prompt. Sanitized before use.
+    description?: string;
 }
 
 export interface StylePreset {

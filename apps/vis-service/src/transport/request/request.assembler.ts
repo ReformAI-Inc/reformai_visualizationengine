@@ -19,6 +19,58 @@ import type { RenovationSelectionIds } from '../../shared/types/catalogue.js';
 import type { GenerateVisualizationParams } from '../../shared/types/core.js';
 import { STYLE_REGISTRY } from '../../shared/styles.registry.js';
 import { parseMultipartForm } from './multipart.parser.js';
+import { MAX_INJECTED_ITEMS } from '../../shared/injected-items.constants.js';
+
+/**
+ * Parses the optional `productDescriptions` field: a JSON array of strings with
+ * the same length and order as the `productImages` files. Returns undefined when
+ * the field is absent/empty (items are then unlabeled). Any malformed value is a
+ * ValidationError (→ 400), never a 500.
+ */
+export function parseProductDescriptions(
+    raw: string | boolean | undefined,
+    productImageCount: number,
+): string[] | undefined {
+    if (raw === undefined || raw === '') return undefined;
+    if (productImageCount === 0) {
+        throw new ValidationError(`El campo 'productDescriptions' requiere al menos un archivo en 'productImages'`);
+    }
+    if (typeof raw !== 'string') {
+        throw new ValidationError(`El campo 'productDescriptions' debe ser un arreglo JSON de strings`);
+    }
+    const parsed = parseJSON<unknown>(raw, 'productDescriptions');
+    if (!Array.isArray(parsed) || !parsed.every((value): value is string => typeof value === 'string')) {
+        throw new ValidationError(`El campo 'productDescriptions' debe ser un arreglo JSON de strings`);
+    }
+    if (parsed.length !== productImageCount) {
+        throw new ValidationError(
+            `El campo 'productDescriptions' debe tener la misma cantidad de elementos que 'productImages' ` +
+            `(${productImageCount}); recibidos ${parsed.length}`,
+        );
+    }
+    return parsed;
+}
+
+/**
+ * Builds the injected items from either the legacy single `furnitureImage` or the
+ * repeatable `productImages` (+ optional descriptions). Sending both is a 400.
+ */
+export function buildInjectedItems(
+    furnitureImage: (MultipartFile & { buffer: Buffer }) | undefined,
+    productImages: (MultipartFile & { buffer: Buffer })[],
+    productDescriptions: string[] | undefined,
+): InjectedItem[] {
+    if (furnitureImage && productImages.length > 0) {
+        throw new ValidationError(
+            `Envía 'furnitureImage' o 'productImages', no ambos en la misma solicitud`,
+        );
+    }
+    if (furnitureImage) return [{ image: furnitureImage }];
+    return productImages.map((image, index) => {
+        const description = productDescriptions?.[index]?.trim();
+        return description ? { image, description } : { image };
+    });
+}
 
 /**
  * Fills a style preset in from STYLE_REGISTRY when the caller only names it.
@@ -78,11 +130,14 @@ export const processVisualizationFormData = async (
     contractorId?: string,
 ): Promise<ProcessedVisualizationData> => {
     const { fields, files } = await parseMultipartForm(parts);
-    const { roomImage, moodBoardImages, furnitureImage, previousResultImage } = files;
+    const { roomImage, moodBoardImages, furnitureImage, productImages, previousResultImage } = files;
 
     validateImageFile(roomImage, 'roomImage');
     if (moodBoardImages.length) validateImageFiles(moodBoardImages, 'moodBoardImages', { min: 1, max: 10 });
     if (furnitureImage) validateImageFile(furnitureImage, 'furnitureImage');
+    if (productImages.length) validateImageFiles(productImages, 'productImages', { min: 1, max: MAX_INJECTED_ITEMS });
+    const productDescriptions = parseProductDescriptions(fields['productDescriptions'], productImages.length);
+    const injectedItems = buildInjectedItems(furnitureImage, productImages, productDescriptions);
     if (previousResultImage) validateImageFile(previousResultImage, 'previousResultImage');
 
     const styleInfluence = parseNumber(fields['styleInfluence']?.toString(), 'styleInfluence');
@@ -121,7 +176,12 @@ export const processVisualizationFormData = async (
     }
 
     const validatedData = validationResult.data;
-    const injectedItems: InjectedItem[] = furnitureImage ? [{ image: furnitureImage }] : [];
+    const resolvedPipelineMode = validatedData.pipelineMode ?? pipelineMode;
+    if (productImages.length > 0 && resolvedPipelineMode === 'baseline_original') {
+        // baseline_original is frozen and only reads furnitureImage — reject rather
+        // than silently dropping the products.
+        throw new ValidationError(`El modo 'baseline_original' no soporta 'productImages'; usa 'furnitureImage'`);
+    }
 
     return {
         roomImage,
@@ -136,7 +196,7 @@ export const processVisualizationFormData = async (
         geometryPreservation: validatedData.geometryPreservation,
         phaseAnchoring: validatedData.phaseAnchoring,
         phaseAnchoringV2: validatedData.phaseAnchoringV2,
-        pipelineMode: validatedData.pipelineMode ?? pipelineMode,
+        pipelineMode: resolvedPipelineMode,
         previousResultImage,
         contractorId,
         renovationSelectionIds: validatedData.renovationSelectionIds,

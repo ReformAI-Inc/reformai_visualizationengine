@@ -34,7 +34,7 @@ import {
     PIPELINE_MODE,
     BALANCED_V5_STRUCTURAL_PART,
     BALANCED_V5_STYLE_TEMPLATE,
-    INJECTED_ITEM_AUDIT_TEXT,
+    buildInjectedItemAuditText,
     buildMoodboardScopeBlock,
     V5_MOODBOARD_INFLUENCE_STATEMENT,
     INFLUENCE_PRESET_STYLE_ONLY,
@@ -136,6 +136,9 @@ export interface BalancedV5PromptParams {
     stylePreset: StylePreset;
     textPrompt: string;
     hasInjectedItem: boolean;
+    // Number of injected items (1..MAX_INJECTED_ITEMS). Defaults to 1 when
+    // hasInjectedItem is true, which keeps the single-item audit text unchanged.
+    injectedItemCount?: number;
 }
 
 export interface BuiltBalancedV5Prompt {
@@ -151,6 +154,7 @@ export interface BuiltBalancedV5Prompt {
 
 export const buildVisualizationPrompt = (params: BalancedV5PromptParams): BuiltBalancedV5Prompt => {
     const { roomType, stylePreset, textPrompt, hasInjectedItem } = params;
+    const injectedItemCount = hasInjectedItem ? (params.injectedItemCount ?? 1) : 0;
 
     // ── Step 1: Validate required fields ─────────────────────────────────────
     requireString(stylePreset?.name, 'stylePreset.name');
@@ -243,7 +247,7 @@ export const buildVisualizationPrompt = (params: BalancedV5PromptParams): BuiltB
 
     // ── Step 8: Inject INJECTED_ITEM_AUDIT_BLOCK ──────────────────────────────
     if (hasInjectedItem) {
-        rendered = rendered.replace('{{INJECTED_ITEM_AUDIT_BLOCK}}', INJECTED_ITEM_AUDIT_TEXT);
+        rendered = rendered.replace('{{INJECTED_ITEM_AUDIT_BLOCK}}', buildInjectedItemAuditText(injectedItemCount));
     } else {
         rendered = rendered.replace('\n{{INJECTED_ITEM_AUDIT_BLOCK}}', '');
     }

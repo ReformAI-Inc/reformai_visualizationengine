@@ -1,5 +1,6 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { processVisualizationFormData } from '../request/request.assembler.js';
+import { classifyMultipartLimitError } from '../request/multipart.parser.js';
 import { ValidationError } from '../../shared/validation/validation.utils.js';
 import { CatalogueValidationError } from '../../catalog/resolver.js';
 import { generateVisualization } from '../../pipelines/core/pipeline-dispatcher.js';
@@ -42,6 +43,10 @@ export async function generateVisualizationController(
         }
         if (error instanceof CatalogueValidationError) {
             return reply.status(400).send({ error: 'Catalogue Validation Error', message: error.message });
+        }
+        const multipartLimit = classifyMultipartLimitError(error);
+        if (multipartLimit) {
+            return reply.status(multipartLimit.status).send({ error: 'Validation Error', message: multipartLimit.message });
         }
 
         const geminiError = extractGeminiError(error);

@@ -1,11 +1,16 @@
-import { GenerateVisualizationParams, ResolvedRenovationSelections } from '../../../shared/types/index.js';
+import type {
+    ClassifiedAGT,
+    GenerateVisualizationParams,
+    InjectedItem,
+    ResolvedRenovationSelections,
+} from '../../../shared/types/index.js';
 import {
     buildAGTConstraintBlock,
     buildAGTEchoBlock,
     buildConflictClausesBlock,
     buildConstraintHierarchyBlock,
     buildRenovationAnchorsBlock,
-    INJECTED_ITEM_BLOCK_HEADER,
+    buildInjectedItemBlockHeader,
 } from '../../../prompts/balanced_v7/visualization.constants.js';
 import {
     buildVisualizationPrompt,
@@ -29,49 +34,25 @@ import {
 import { composeCanonicalGenerationParts } from '../../core/pipeline-composer.js';
 import { generateWithVerification } from '../../../guardrails/verified-generation.js';
 
-// modelId undefined = DEFAULT_IMAGE_MODEL.
-export const generateWithModel = async (
-    params: GenerateVisualizationParams,
-    modelId: string | undefined,
-    debugMode: string,
-): Promise<{ image: string; model: string; debug: any }> => {
-    const {
-        roomImage,
-        roomType,
-        stylePreset,
-        moodBoardImages,
-        textPrompt,
-        styleInfluence,
-        contractorId,
-        renovationSelectionIds,
-    } = params;
-
-    const {
-        injectedItems,
-        item,
-        hasInjectedItem,
-        shimmedFromFurnitureImage,
-    } = normalizeInjectedItems(params, 'balanced_v7');
-
+// Pure prompt assembly for V7 (no I/O): given the request, its normalized injected
+// items, the classified AGT, and resolved renovation selections, build every
+// prompt block and the final ordered parts array. Split out of generateWithModel
+// so the exact parts sent to the model are unit-testable without calling Gemini.
+export const assembleBalancedV7Parts = ({
+    params,
+    injectedItems,
+    classifiedAGT,
+    resolvedRenovationSelections,
+}: {
+    params: GenerateVisualizationParams;
+    injectedItems: InjectedItem[];
+    classifiedAGT: ClassifiedAGT;
+    resolvedRenovationSelections: ResolvedRenovationSelections | null;
+}) => {
+    const { roomType, stylePreset, moodBoardImages, textPrompt, styleInfluence } = params;
+    const hasInjectedItem = injectedItems.length > 0;
     const hasMoodboards = moodBoardImages.length > 0;
-
-    let agtStatus: 'success' | 'fallback' = 'success';
-    let agtFallbackReason: string | null = null;
-    const rawAGT = await extractArchitecturalGroundTruth(roomImage).catch((error: unknown) => {
-        agtStatus = 'fallback';
-        agtFallbackReason = error instanceof Error ? error.message : String(error);
-        return FALLBACK_AGT;
-    });
-    const classifiedAGT = classifyAGTConfidence(rawAGT);
     const hasHardAGTFacts = classifiedAGT.hard_fact_fields.length > 0;
-
-    let resolvedRenovationSelections: ResolvedRenovationSelections | null = null;
-    if (contractorId && hasActiveSelections(renovationSelectionIds)) {
-        resolvedRenovationSelections = await resolveRenovationSelections(
-            contractorId,
-            renovationSelectionIds!,
-        );
-    }
     const hasRenovationAnchors =
         resolvedRenovationSelections !== null &&
         Object.values(resolvedRenovationSelections).some(Boolean);
@@ -90,6 +71,7 @@ export const generateWithModel = async (
         stylePreset,
         textPrompt,
         hasInjectedItem,
+        injectedItemCount: injectedItems.length,
     });
 
     const agtConstraintBlock = buildAGTConstraintBlock(classifiedAGT);
@@ -128,9 +110,85 @@ export const generateWithModel = async (
             constraintHierarchyBlock: constraintHierarchy,
             renovationAnchorsBlock,
             agtEchoBlock,
-            injectedItemBlockHeader: INJECTED_ITEM_BLOCK_HEADER,
+            injectedItemBlockHeader: hasInjectedItem ? buildInjectedItemBlockHeader(injectedItems.length) : '',
         },
-        itemImage: item?.image ?? null,
+        injectedItems,
+    });
+
+    return {
+        parts,
+        structuralPart,
+        stylePart,
+        rawApertureLook,
+        safeApertureLook,
+        apertureSanitized,
+        stagingDensityTier,
+        stagingDensity,
+        agtConstraintBlock,
+        agtEchoBlock,
+        conflictClausesBlock,
+    };
+};
+
+// modelId undefined = DEFAULT_IMAGE_MODEL.
+export const generateWithModel = async (
+    params: GenerateVisualizationParams,
+    modelId: string | undefined,
+    debugMode: string,
+): Promise<{ image: string; model: string; debug: any }> => {
+    const {
+        roomImage,
+        stylePreset,
+        moodBoardImages,
+        contractorId,
+        renovationSelectionIds,
+    } = params;
+
+    const {
+        injectedItems,
+        hasInjectedItem,
+        shimmedFromFurnitureImage,
+    } = normalizeInjectedItems(params, 'balanced_v7');
+
+    const hasMoodboards = moodBoardImages.length > 0;
+
+    let agtStatus: 'success' | 'fallback' = 'success';
+    let agtFallbackReason: string | null = null;
+    const rawAGT = await extractArchitecturalGroundTruth(roomImage).catch((error: unknown) => {
+        agtStatus = 'fallback';
+        agtFallbackReason = error instanceof Error ? error.message : String(error);
+        return FALLBACK_AGT;
+    });
+    const classifiedAGT = classifyAGTConfidence(rawAGT);
+
+    let resolvedRenovationSelections: ResolvedRenovationSelections | null = null;
+    if (contractorId && hasActiveSelections(renovationSelectionIds)) {
+        resolvedRenovationSelections = await resolveRenovationSelections(
+            contractorId,
+            renovationSelectionIds!,
+        );
+    }
+    const hasRenovationAnchors =
+        resolvedRenovationSelections !== null &&
+        Object.values(resolvedRenovationSelections).some(Boolean);
+
+    const {
+        parts,
+        structuralPart,
+        stylePart,
+        rawApertureLook,
+        safeApertureLook,
+        apertureSanitized,
+        stagingDensityTier,
+        stagingDensity,
+        agtConstraintBlock,
+        agtEchoBlock,
+        conflictClausesBlock,
+    } = assembleBalancedV7Parts({
+        params,
+        injectedItems,
+        classifiedAGT,
+        resolvedRenovationSelections,
     });
 
     const { image, modelId: usedModelId, verification } = await generateWithVerification(
@@ -162,7 +220,9 @@ export const generateWithModel = async (
             conflictClausesInserted: !!conflictClausesBlock,
             conflictClausesBlock: conflictClausesBlock || null,
             hasInjectedItem,
-            injectedItem: item ? { shimmedFromFurnitureImage } : null,
+            injectedItem: hasInjectedItem ? { shimmedFromFurnitureImage } : null,
+            injectedItemCount: injectedItems.length,
+            injectedItemDescriptions: injectedItems.map((injected) => injected.description ?? null),
             moodboardScopeBlockInserted: hasMoodboards,
             moodboardCount: moodBoardImages.length,
             stagingDensity,

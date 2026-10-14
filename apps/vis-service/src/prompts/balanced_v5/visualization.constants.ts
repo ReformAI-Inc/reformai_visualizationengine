@@ -24,7 +24,12 @@ export {
     DEFAULT_USER_REQUEST,
 } from '../blocks/influence.js';
 export { buildRenovationAnchorsBlock } from '../blocks/renovation-anchors.js';
-export { INJECTED_ITEM_BLOCK_HEADER, INJECTED_ITEM_AUDIT_TEXT } from '../blocks/injected-items.js';
+export {
+    INJECTED_ITEM_BLOCK_HEADER,
+    INJECTED_ITEM_AUDIT_TEXT,
+    buildInjectedItemBlockHeader,
+    buildInjectedItemAuditText,
+} from '../blocks/injected-items.js';
 
 
 

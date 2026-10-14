@@ -4,6 +4,13 @@ import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { generateVisualizationController } from './transport/controllers/visualization.controller.js';
 import { getCatalogueRegistry } from './catalog/catalogues.registry.js';
+import { MAX_INJECTED_ITEMS } from './shared/injected-items.constants.js';
+
+// roomImage + up to 10 moodBoardImages + up to MAX_INJECTED_ITEMS productImages
+// + previousResultImage, plus one spare so an over-limit product upload reaches
+// the assembler and gets its specific 400 message instead of a generic limit error.
+const MAX_MULTIPART_FILES = 1 + 10 + MAX_INJECTED_ITEMS + 1 + 1;
+const MAX_MULTIPART_FIELDS = 20;
 
 if (!process.env.K_SERVICE) {
     loadEnvFile();
@@ -27,11 +34,11 @@ await fastify.register(multipart, {
     limits: {
         fieldNameSize: 100,
         fieldSize: 1024 * 1024,
-        fields: 20,
+        fields: MAX_MULTIPART_FIELDS,
         fileSize: 10 * 1024 * 1024,
-        files: 15,
+        files: MAX_MULTIPART_FILES,
         headerPairs: 2000,
-        parts: 30,
+        parts: MAX_MULTIPART_FIELDS + MAX_MULTIPART_FILES,
     },
 });
 

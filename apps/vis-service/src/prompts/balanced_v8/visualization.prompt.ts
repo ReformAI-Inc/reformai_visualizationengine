@@ -31,6 +31,7 @@ export interface BalancedV8PromptParams {
     stylePreset: StylePreset;
     textPrompt: string;
     hasInjectedItem: boolean;
+    injectedItemCount?: number; // accepted for builder parity with V5/V7; V8 has no audit block
 }
 
 export interface BuiltBalancedV8Prompt {

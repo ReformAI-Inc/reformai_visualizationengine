@@ -2,7 +2,7 @@ import { GenerateVisualizationParams, ResolvedRenovationSelections } from '../..
 import {
     buildConstraintHierarchyBlock,
     buildRenovationAnchorsBlock,
-    INJECTED_ITEM_BLOCK_HEADER,
+    buildInjectedItemBlockHeader,
 } from '../../../prompts/balanced_v5/visualization.constants.js';
 import {
     buildVisualizationPrompt,
@@ -36,7 +36,6 @@ export const generateVisualization = async (
 
     const {
         injectedItems,
-        item,
         hasInjectedItem,
         shimmedFromFurnitureImage,
     } = normalizeInjectedItems(params, 'balanced_v5');
@@ -69,6 +68,7 @@ export const generateVisualization = async (
         stylePreset,
         textPrompt,
         hasInjectedItem,
+        injectedItemCount: injectedItems.length,
     });
 
     const constraintHierarchyBlock = buildConstraintHierarchyBlock(
@@ -103,9 +103,9 @@ export const generateVisualization = async (
         optional: {
             constraintHierarchyBlock,
             renovationAnchorsBlock,
-            injectedItemBlockHeader: INJECTED_ITEM_BLOCK_HEADER,
+            injectedItemBlockHeader: hasInjectedItem ? buildInjectedItemBlockHeader(injectedItems.length) : '',
         },
-        itemImage: item?.image ?? null,
+        injectedItems,
     });
 
     const { image, modelId } = await callGemini(parts);
@@ -117,7 +117,9 @@ export const generateVisualization = async (
             pipelineMode: 'balanced_v5',
             templateVersion: '6.0.0',
             hasInjectedItem,
-            injectedItem: item ? { shimmedFromFurnitureImage } : null,
+            injectedItem: hasInjectedItem ? { shimmedFromFurnitureImage } : null,
+            injectedItemCount: injectedItems.length,
+            injectedItemDescriptions: injectedItems.map((injected) => injected.description ?? null),
             moodboardScopeBlockInserted: hasMoodboards,
             moodboardCount: moodBoardImages.length,
             stagingDensity,
