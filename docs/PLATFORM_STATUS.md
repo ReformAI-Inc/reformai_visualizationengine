@@ -25,7 +25,7 @@ and `improved_current` were **archived 2026-07-02** to repo-root `archive/legacy
 
 | Mode | Lifecycle | Handler Location |
 |---|---|---|
-| `baseline_original` | Regression gate's fixed visual anchor (frozen; hardcodes `gemini-2.5-flash-image`, shut down 2026-10-02 — needs a re-frozen anchor) | `pipelines/legacy-services/baseline/geminiService.ts` |
+| `baseline_original` | The original production pipeline (prompt and part order frozen) and the regression gate's anchor. Runs on the environment's model (3.1) via the shared image-model client since 2026-10-15; the gate anchor needs re-freezing on 3.1 | `pipelines/legacy-services/baseline/geminiService.ts` |
 | `balanced_v5` | Frozen benchmark reference; serves `balanced_v6` alias | `pipelines/versions/balanced-v5/index.ts` |
 | `balanced_v6` | Explicit alias of `balanced_v5` handler | `pipelines/core/pipeline-routing.ts` (HANDLER_ALIASES) |
 | `balanced_v7` | Canonical production pipeline (`gemini-3.1-flash-image`) | `pipelines/versions/balanced-v7/index.ts` |
