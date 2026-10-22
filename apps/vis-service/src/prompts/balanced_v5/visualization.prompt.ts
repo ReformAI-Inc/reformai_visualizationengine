@@ -40,7 +40,7 @@ import {
     INFLUENCE_PRESET_STYLE_ONLY,
     DEFAULT_USER_REQUEST,
 } from './visualization.constants.js';
-import { getRoomTypeEntry } from '../../shared/room-types.registry.js';
+import { resolveRoomTypeEntry } from '../../shared/room-types.registry.js';
 import { getDensityBlockEntry } from '../../shared/density-blocks.registry.js';
 
 // ── Error class ───────────────────────────────────────────────────────────────
@@ -178,13 +178,8 @@ export const buildVisualizationPrompt = (params: BalancedV5PromptParams): BuiltB
     }
 
     // ── Step 3: Resolve registry lookups ─────────────────────────────────────
-    const roomEntry = getRoomTypeEntry(roomType);
-    if (!roomEntry) {
-        throw new PromptInjectionError(
-            `Room type '${roomType}' is not registered in ROOM_TYPE_REGISTRY. ` +
-            `Registered types: bedroom, living_room, kitchen, dining_room, home_office, bathroom.`,
-        );
-    }
+    // Never fails: a room type outside the registry gets a generic entry.
+    const roomEntry = resolveRoomTypeEntry(roomType);
 
     const densityEntry = getDensityBlockEntry(densityTier);
     if (!densityEntry) {
