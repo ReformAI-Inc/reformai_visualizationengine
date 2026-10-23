@@ -6,6 +6,9 @@
     "apps/web-sandbox",
     "apps/vis-service"
   ],
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "npm run build --workspace=apps/web-sandbox",
     "dev": "concurrently \"npm run dev --workspace=back-reformai\" \"npm run dev --workspace=apps/web-sandbox\"",
